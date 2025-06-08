@@ -1,6 +1,5 @@
 <?php
 require_once 'includes/db_connect.php';
-require_once 'includes/icon-helpers.php';
 
 $pageTitle = 'AI サービス ダッシュボード';
 
@@ -11,13 +10,15 @@ $freeServices = count(getAIServices(['free' => 1]));
 $recommendedServices = count(getAIServices(['recommended' => 1]));
 
 // AIタイプ別統計
-$aiTypeStats = [
-    1 => ['name' => 'テキスト生成AI', 'icon' => 'fas fa-pen', 'count' => count(getAIServices(['ai_type_id' => 1]))],
-    2 => ['name' => '画像生成AI', 'icon' => 'fas fa-image', 'count' => count(getAIServices(['ai_type_id' => 2]))],
-    3 => ['name' => '音声・音楽生成AI', 'icon' => 'fas fa-music', 'count' => count(getAIServices(['ai_type_id' => 3]))],
-    4 => ['name' => 'チャットボット', 'icon' => 'fas fa-comments', 'count' => count(getAIServices(['ai_type_id' => 4]))],
-    5 => ['name' => 'コード生成AI', 'icon' => 'fas fa-code', 'count' => count(getAIServices(['ai_type_id' => 5]))]
-];
+$aiTypesRaw = getAITypes();
+$aiTypeStats = [];
+foreach ($aiTypesRaw as $type) {
+    $aiTypeStats[$type['id']] = [
+        'name' => $type['name'],
+        'icon' => $type['icon'] ?? 'fas fa-robot',
+        'count' => count(getAIServices(['ai_type_id' => $type['id']]))
+    ];
+}
 
 include 'includes/header.php';
 ?>
@@ -138,14 +139,10 @@ include 'includes/header.php';
                             <div class="me-3">
                                 <span class="badge bg-primary fs-6"><?= $index + 1 ?></span>
                             </div>
-                            <!-- 改善されたアイコン表示 -->
-                            <div class="position-relative me-3">
-                                <?= renderAIIcon(
-                                    getIconWithFallback($service['ai_icon'], $service['ai_service']), 
-                                    $service['ai_service'], 
-                                    'ai-icon-ranking'
-                                ) ?>
-                            </div>
+                            <img src="icons/<?= htmlspecialchars($service['ai_icon']) ?>" 
+                                 alt="<?= htmlspecialchars($service['ai_service']) ?>" 
+                                 class="ai-icon me-3"
+                                 onerror="this.src='icons/default-icon.png'">
                             <div class="flex-grow-1">
                                 <h6 class="mb-1"><?= htmlspecialchars($service['ai_service']) ?></h6>
                                 <small class="text-muted"><?= htmlspecialchars($service['company_name']) ?></small>

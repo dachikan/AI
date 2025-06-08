@@ -2,16 +2,16 @@
 require_once 'includes/db_connect.php';
 
 $pageTitle = 'AI カテゴリ別一覧';
-
-// AIタイプ別の表示
-$aiTypes = [
-    1 => ['name' => 'テキスト生成AI', 'icon' => 'fas fa-pen', 'description' => '文章作成、翻訳、要約などのテキスト処理'],
-    2 => ['name' => '画像生成AI', 'icon' => 'fas fa-image', 'description' => 'イラスト、写真、アート作品の生成'],
-    3 => ['name' => '音声・音楽生成AI', 'icon' => 'fas fa-music', 'description' => '音楽作成、音声合成、効果音生成'],
-    4 => ['name' => 'チャットボット', 'icon' => 'fas fa-comments', 'description' => '対話型AI、カスタマーサポート'],
-    5 => ['name' => 'コード生成AI', 'icon' => 'fas fa-code', 'description' => 'プログラミング支援、コード自動生成']
-];
-
+// AIタイプをDBから取得
+$aiTypesRaw = getAITypes();
+$aiTypes = [];
+foreach ($aiTypesRaw as $type) {
+    $aiTypes[$type['id']] = [
+        'name' => $type['name'],
+        'icon' => $type['icon'] ?? 'fas fa-robot', // アイコンカラムがなければデフォルト
+        'description' => $type['description'] ?? ''
+    ];
+}
 $selectedType = isset($_GET['type']) ? intval($_GET['type']) : null;
 
 include 'includes/header.php';
