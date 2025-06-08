@@ -1,0 +1,163 @@
+/* AIアイコンのちらつき対策CSS */
+
+/* アイコン共通スタイル */
+.ai-icon,
+.ai-icon-large,
+.ai-icon-ranking,
+.ai-icon-compare {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: opacity 0.2s ease;
+}
+
+/* アイコンサイズ別設定 */
+.ai-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+}
+
+.ai-icon-large {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+}
+
+/* ランキング用のローディングアニメーションを小さく */
+.ai-icon-ranking.loading::before {
+  width: 12px;
+  height: 12px;
+  border-width: 1px;
+}
+/* エラー状態（画像が見つからない場合） */
+.ai-icon.error,
+.ai-icon-ranking.error {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  opacity: 0.8;
+}
+/* デフォルトアイコンのスタイル（default-icon.png使用） */
+.ai-icon.default-icon,
+.ai-icon-ranking.default-icon {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  object-fit: contain;
+}
+
+/* ランキング用デフォルトアイコンのサイズ制限 */
+.ai-icon-ranking.default-icon {
+  width: 40px !important;
+  height: 40px !important;
+  max-width: 40px !important;
+  max-height: 40px !important;
+}
+
+.ai-icon-compare {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+}
+
+/* ローディング状態 */
+.ai-icon.loading {
+  opacity: 0.7;
+}
+
+.ai-icon.loading::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  border: 2px solid #dee2e6;
+  border-top: 2px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* エラー状態（画像が見つからない場合） */
+.ai-icon.error {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  opacity: 0.8;
+}
+
+/* デフォルトアイコンのスタイル（default-icon.png使用） */
+.ai-icon.default-icon {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+}
+
+.ai-icon-large.default-icon {
+  font-size: 32px;
+}
+
+.ai-icon-ranking.default-icon {
+  font-size: 20px;
+}
+
+/* スピンアニメーション */
+@keyframes spin {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* フェードイン効果 */
+.ai-icon.loaded {
+  opacity: 1;
+}
+
+/* プレースホルダー効果 */
+.ai-icon-placeholder {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading-shimmer 1.5s infinite;
+}
+
+@keyframes loading-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* ホバー効果 */
+.ai-icon:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .ai-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .ai-icon-large {
+    width: 70px;
+    height: 70px;
+  }
+
+  .ai-icon.error::before,
+  .ai-icon.default-icon::before {
+    font-size: 20px;
+  }
+
+  .ai-icon-large.error::before,
+  .ai-icon-large.default-icon::before {
+    font-size: 28px;
+  }
+}
