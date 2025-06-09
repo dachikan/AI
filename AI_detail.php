@@ -1,5 +1,6 @@
 <?php
 require_once 'includes/db_connect.php';
+require_once 'includes/post_link_component.php';
 
 $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $service = getAIServiceById($id);
@@ -30,9 +31,9 @@ include 'includes/header.php';
             <div class="row align-items-center">
                 <div class="col-md-2">
                     <img src="icons/<?= htmlspecialchars($service['ai_icon']) ?>" 
-                         alt="<?= htmlspecialchars($service['ai_service']) ?>" 
-                         class="ai-icon-large"
-                         onerror="this.src='icons/default-icon.png'">
+                        alt="<?= htmlspecialchars($service['ai_service']) ?>" 
+                        class="ai-icon-large"
+                        onerror="this.src='icons/default-icon.png'">
                 </div>
                 <div class="col-md-7">
                     <h1 class="mb-2"><?= htmlspecialchars($service['ai_service']) ?></h1>
@@ -153,13 +154,18 @@ include 'includes/header.php';
                                 だめね
                             </button>
                         </div>
-                        <div class="col-md-4">
-                            <a href="https://note.com/hashtag/<?= urlencode($service['ai_service']) ?>" 
-                               target="_blank" class="btn btn-outline-primary btn-lg w-100 mb-2">
-                                <i class="fas fa-edit"></i><br>
-                                使ったよ<br>
-                                (note記事)
-                            </a>
+                        <!-- 使ったよリンクセクション -->
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5><i class="fas fa-share-alt"></i> このAIを使ってみましたか？</h5>
+                            </div>
+                            <div class="card-body">
+                                <?= renderPostLinkComponent($Service, true, 20) ?>
+                                <p class="text-muted small mt-2">
+                                    <i class="fas fa-info-circle"></i> 
+                                    あなたの体験をnoteで共有して、他のユーザーに役立つ情報を提供しましょう！
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>

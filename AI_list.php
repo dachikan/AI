@@ -1,6 +1,9 @@
 <?php
-require_once 'includes/db_connect.php';
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
+require_once 'includes/db_connect.php';
+require_once 'includes/post_link_component.php';
 $pageTitle = 'AI サービス一覧';
 
 // フィルタとソートのパラメータを取得
@@ -50,8 +53,8 @@ include 'includes/header.php';
                 <div class="col-md-3">
                     <label class="form-label">検索</label>
                     <input type="text" class="form-control" name="search" 
-                           value="<?= htmlspecialchars($filters['search']) ?>" 
-                           placeholder="サービス名・説明で検索">
+                        value="<?= htmlspecialchars($filters['search']) ?>" 
+                        placeholder="サービス名・説明で検索">
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">AIタイプ</label>
@@ -68,12 +71,12 @@ include 'includes/header.php';
                     <label class="form-label">料金</label>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="free" 
-                               <?= $filters['free'] ? 'checked' : '' ?>>
+                            <?= $filters['free'] ? 'checked' : '' ?>>
                         <label class="form-check-label">無料あり</label>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="paid" 
-                               <?= $filters['paid'] ? 'checked' : '' ?>>
+                            <?= $filters['paid'] ? 'checked' : '' ?>>
                         <label class="form-check-label">有料のみ</label>
                     </div>
                 </div>
@@ -81,7 +84,7 @@ include 'includes/header.php';
                     <label class="form-label">その他</label>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="recommended" 
-                               <?= $filters['recommended'] ? 'checked' : '' ?>>
+                            <?= $filters['recommended'] ? 'checked' : '' ?>>
                         <label class="form-check-label">おすすめ</label>
                     </div>
                 </div>
@@ -124,20 +127,20 @@ include 'includes/header.php';
                     <div class="card-body">
                         <div class="d-flex align-items-start mb-3">
                             <img src="icons/<?= htmlspecialchars($service['ai_icon']) ?>" 
-                                 alt="<?= htmlspecialchars($service['ai_service']) ?>" 
-                                 class="ai-icon me-3"
-                                 onerror="this.src='icons/default-icon.png'">
+                                alt="<?= htmlspecialchars($service['ai_service']) ?>" 
+                                class="ai-icon me-3"
+                                onerror="this.src='icons/default-icon.png'">
                             <div class="flex-grow-1">
                                 <h5 class="card-title mb-1"><?= htmlspecialchars($service['ai_service']) ?></h5>
                                 <small class="text-muted"><?= htmlspecialchars($service['company_name']) ?></small>
                             </div>
                         </div>
-                        
+
                         <p class="card-text text-muted small mb-3">
                             <?= htmlspecialchars(mb_substr($service['description'], 0, 100)) ?>
                             <?= mb_strlen($service['description']) > 100 ? '...' : '' ?>
                         </p>
-                        
+
                         <!-- 評価 -->
                         <div class="d-flex align-items-center mb-3">
                             <div class="rating-stars me-2">
@@ -150,7 +153,7 @@ include 'includes/header.php';
                             </div>
                             <small class="text-muted"><?= number_format($rating, 1) ?> (<?= $service['popularity_score'] ?>点)</small>
                         </div>
-                        
+
                         <!-- バッジ -->
                         <div class="mb-3">
                             <?php if ($service['free_tier_available']): ?>
@@ -163,7 +166,11 @@ include 'includes/header.php';
                                 <span class="badge bg-info me-1">API</span>
                             <?php endif; ?>
                         </div>
-                        
+                        <!-- 使ったよリンク（コンパクト） -->
+                        <div class="mt-2">
+                            <?= renderPostLinkComponent($service, false, 30) ?>
+                        </div>
+
                         <!-- アクションボタン -->
                         <div class="d-grid gap-2">
                             <a href="AI_detail.php?id=<?= $service['id'] ?>" class="btn btn-primary">

@@ -339,7 +339,7 @@ try {
 		    <img src="images/midjourney-icon.png" alt="Midjourney" height="40" class="mx-2">
 		    <img src="images/stable-diffusion-logo.png" alt="Stable Diffusion" height="40" class="mx-2">
 		</div>
-		<a href="AISample-AllTry.php" class="btn btn-light btn-lg">サンプル一覧を見る</a>
+		<a href="AI-list.php" class="btn btn-light btn-lg">サンプル一覧を見る</a>
 		<p class="mt-2 text-light">現在、<span class="price-tag">このサイトは構築中です。</span>その点をご理解の上、ご利用下さい</p>
 	    </div>
 	</section>
