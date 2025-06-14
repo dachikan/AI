@@ -29,8 +29,8 @@ function renderPostLinkComponent($aiService, $showTitle = true, $previewLength =
         }
     }
     
-    // 投稿リンクURL
-    $postUrl = "AI_post_form.php?ai_service_id=" . $aiServiceId;
+    // 投稿リンクURLを修正
+    $postUrl = "ai_experience_auth.php?ai_service_id=" . $aiServiceId;
     
     // HTML出力
     ob_start();
@@ -161,7 +161,8 @@ document.addEventListener('DOMContentLoaded', function() {
  */
 function renderCompactPostLink($aiService) {
     $aiServiceId = $aiService['id'];
-    $postUrl = "AI_post_form.php?ai_service_id=" . $aiServiceId;
+    // 投稿リンクURLを修正
+    $postUrl = "ai_experience_auth.php?ai_service_id=" . $aiServiceId;
     
     // テンプレートからタイトルプレビュー取得
     $titlePreview = '';

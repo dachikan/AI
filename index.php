@@ -149,13 +149,13 @@ if (!$accessAllowed) {
     <?php 
 	// デバッグ情報を追加
 	if (isset($_SERVER['HTTP_REFERER'])) {
-	    echo '<div class="debug-info">';
-	    echo '<p>デバッグ情報:</p>';
-	    echo '<p>リファラー: ' . htmlspecialchars($_SERVER['HTTP_REFERER']) . '</p>';
-	    $referrer = parse_url($_SERVER['HTTP_REFERER']);
-	    echo '<p>解析結果:</p>';
-	    echo '<pre>' . print_r($referrer, true) . '</pre>';
-	    echo '</div>';
+		echo '<div class="debug-info">';
+		echo '<p>デバッグ情報:</p>';
+		echo '<p>リファラー: ' . htmlspecialchars($_SERVER['HTTP_REFERER']) . '</p>';
+		$referrer = parse_url($_SERVER['HTTP_REFERER']);
+		echo '<p>解析結果:</p>';
+		echo '<pre>' . print_r($referrer, true) . '</pre>';
+		echo '</div>';
 	}
     ?>
 </body>
@@ -211,25 +211,21 @@ try {
     $username = "LAA1337491";
     $password = "kami2004";
     $dbname = "LAA1337491-nsk";
-    
     $conn = new mysqli($servername, $username, $password, $dbname);
-    
     if (!$conn->connect_error) {
-	$db_connected = true;
-	$conn->set_charset("utf8mb4");
-	
-	// カテゴリ情報のみ取得（ナビゲーション用）
-	//$sql = "SELECT CategoryID, CategoryName FROM Categories";
-	$sql = "SELECT id, name FROM AIPromptCategories";
-	$result = $conn->query($sql);
-	
-	if ($result) {
-	    while($row = $result->fetch_assoc()) {
-		$categories[] = $row;
-	    }
+		$db_connected = true;
+		$conn->set_charset("utf8mb4");
+			// カテゴリ情報のみ取得（ナビゲーション用）
+		//$sql = "SELECT CategoryID, CategoryName FROM Categories";
+		$sql = "SELECT id, name FROM AIPromptCategories";
+		$result = $conn->query($sql);
+
+		if ($result) {
+			while($row = $result->fetch_assoc()) {
+			$categories[] = $row;
+		}
 	}
-	
-	$conn->close();
+		$conn->close();
     }
 } catch (Exception $e) {
     // エラーは無視し、静的コンテンツを表示
@@ -246,13 +242,13 @@ try {
     <style>
 	/* カスタムスタイル */
 	body {
-	    font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+		font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
 	}
 	.hero-section {
-	    background: linear-gradient(135deg, #2a2a72 0%, #009ffd 100%);
-	    color: white;
-	    padding: 3rem 0;
-	    margin-bottom: 2rem;
+		background: linear-gradient(135deg, #2a2a72 0%, #009ffd 100%);
+		color: white;
+		padding: 3rem 0;
+		margin-bottom: 2rem;
 	}
 	.article-preview {
 	    border: 1px solid #dee2e6;
@@ -308,38 +304,41 @@ try {
 <body>
     <header>
 	<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-	    <div class="container">
-		<a class="navbar-brand" href="#">AI活用サンプル集</a>
-		<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-		    <span class="navbar-toggler-icon"></span>
-		</button>
-		<div class="collapse navbar-collapse" id="navbarNav">
-		    <ul class="navbar-nav ms-auto">
-			<li class="nav-item"><a class="nav-link" href="#article-preview">記事の内容</a></li>
-			<li class="nav-item"><a class="nav-link" href="#ai-examples">AI画像例</a></li>
-			<li class="nav-item"><a class="nav-link" href="#features">特徴</a></li>
-			<li class="nav-item"><a class="nav-link" href="#categories">カテゴリ</a></li>
-			<li class="nav-item"><a class="nav-link" href="#faq">よくある質問</a></li>
-		    </ul>
+		<div class="container">
+			<a class="navbar-brand" href="#">AI活用サンプル集</a>
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+			<div class="collapse navbar-collapse" id="navbarNav">
+				<ul class="navbar-nav ms-auto">
+					<li class="nav-item"><a class="nav-link" href="#article-preview">記事の内容</a></li>
+					<li class="nav-item"><a class="nav-link" href="#ai-examples">AI画像例</a></li>
+					<li class="nav-item"><a class="nav-link" href="#features">特徴</a></li>
+					<li class="nav-item"><a class="nav-link" href="#categories">カテゴリ</a></li>
+					<li class="nav-item"><a class="nav-link" href="#faq">よくある質問</a></li>
+				</ul>
+			</div>
 		</div>
-	    </div>
 	</nav>
     </header>
 
     <main>
 	<!-- ヒーローセクション -->
 	<section class="hero-section">
-	    <div class="container text-center">
+		<div class="container text-center">
 		<h1 class="display-4 mb-4">ＡＩプロンプトを試して、<br>
-					    あなたの創作を次のレベルへ</h1>
+					あなたの創作を次のレベルへ</h1>
 		<p class="lead mb-4">noteで紹介したプロンプトとＡＩサービスを使える実用的なページ公開中</p>
 		<div class="d-flex justify-content-center gap-3 mb-4">
-		    <img src="images/gemini-icon.png" alt="Gemini" height="40" class="mx-2">
-		    <img src="images/gpt4-icon.png" alt="GPT-4" height="40" class="mx-2">
-		    <img src="images/midjourney-icon.png" alt="Midjourney" height="40" class="mx-2">
-		    <img src="images/stable-diffusion-logo.png" alt="Stable Diffusion" height="40" class="mx-2">
+		    <img src="icons/claude-icon.png" alt="claude" height="40" class="mx-2">
+		    <img src="icons/chatgpt-icon.png" alt="chatgpt" height="40" class="mx-2">
+		    <img src="icons/github-copilot-icon.png" alt="copilot" height="40" class="mx-2">
+		    <img src="icons/firefly-icon.png" alt="Gemini" height="40" class="mx-2">
+		    <img src="icons/DeepSeek-R1-FW-icon.png" alt="GPT-4" height="40" class="mx-2">
+		    <img src="icons/midjourney-icon.png" alt="Midjourney" height="40" class="mx-2">
+		    <img src="icons/stable-diffusion-logo.png" alt="Stable Diffusion" height="40" class="mx-2">
 		</div>
-		<a href="AI-list.php" class="btn btn-light btn-lg">サンプル一覧を見る</a>
+		<a href="AI_list.php" class="btn btn-light btn-lg">サンプル一覧を見る</a>
 		<p class="mt-2 text-light">現在、<span class="price-tag">このサイトは構築中です。</span>その点をご理解の上、ご利用下さい</p>
 	    </div>
 	</section>
@@ -480,7 +479,7 @@ try {
 					?>
 				    </div>
 				    <h3 class="card-title h5"><?php echo htmlspecialchars($category['name']); ?></h3>
-				    <a href="AISampleList_with_advanced.php?category=<?php echo $category['id']; ?>" class="btn btn-sm btn-outline-secondary mt-2">このカテゴリを見る</a>
+				    <a href="AIS_ranking.php?category=<?php echo $category['id']; ?>" class="btn btn-sm btn-outline-secondary mt-2">このカテゴリを見る</a>
 				</div>
 			    </div>
 			</div>
@@ -532,7 +531,7 @@ try {
 	    <div class="container text-center">
 		<h2 class="mb-4">今すぐAIプロンプトを試してみませんか？</h2>
 		<p class="lead mb-4">使ってみることであなたのAI活用スキルが大きく向上します</p>
-		<a href="AISample-AllTry.php" class="btn btn-success btn-lg">サンプル一覧を見る</a>
+		<a href="AI_ranking.php" class="btn btn-success btn-lg">ランキングを見る</a>
 		<p class="mt-3 text-muted">※ すべてのサンプルに無制限にアクセスできます</p>
 	    </div>
 	</section>

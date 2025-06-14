@@ -1,3 +1,24 @@
+# AI情報表示システム
+
+AIサービスの情報を表示・比較するWebアプリケーション
+
+## 機能
+- AIサービス一覧表示
+- 人気ランキング
+- サービス比較
+- カテゴリ別表示
+
+## セットアップ
+1. データベース設定
+2. db_connect.phpの設定
+3. Webサーバーの設定
+
+## 使用技術
+- PHP
+- MySQL
+- Bootstrap 5
+- JavaScript
+
 # AI情報表示ページ作成用プロンプト 20250607
 このMySQL DB中のAIInfoテーブルのデータはincludes/db_connect.phpでアクセスできます。
 このデータを次の目的で表示するphpプログラムを作成してください。
@@ -51,3 +72,9 @@ is_active, sort_order, popularity_score, version, release_date, last_updated_inf
 ・画面表示ページは先頭にAI_を付加します。
 ・アイコンはicons/xxx-icon.pngの形式です
 ・画像はimagesに入れておきます。
+
+MIT License
+
+Copyright (c) 2024 Your Name
+
+Permission is hereby granted, free of charge, to any person obtaining a copy...

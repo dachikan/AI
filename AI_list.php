@@ -170,6 +170,7 @@ include 'includes/header.php';
                         <div class="mt-2">
                             <?= renderPostLinkComponent($service, false, 30) ?>
                         </div>
+                        
 
                         <!-- アクションボタン -->
                         <div class="d-grid gap-2">

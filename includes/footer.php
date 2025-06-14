@@ -18,7 +18,7 @@
             </div>
             <hr>
             <div class="text-center">
-                <p>&copy; 2024 AI Portal. All rights reserved.</p>
+                <p>&copy; 2025 喜寿プログラマ. All rights reserved.</p>
             </div>
         </div>
     </footer>

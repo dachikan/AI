@@ -160,15 +160,18 @@ include 'includes/header.php';
                                 <h5><i class="fas fa-share-alt"></i> このAIを使ってみましたか？</h5>
                             </div>
                             <div class="card-body">
-                                <?= renderPostLinkComponent($Service, true, 20) ?>
-                                <p class="text-muted small mt-2">
-                                    <i class="fas fa-info-circle"></i> 
-                                    あなたの体験をnoteで共有して、他のユーザーに役立つ情報を提供しましょう！
-                                </p>
+                                <?= renderPostLinkComponent($service, true, 20, 'ai_experience_auth.php') ?>
+                                    <p class="text-muted small mt-2">
+                                        <i class="fas fa-info-circle"></i> 
+                                        あなたの体験をnoteで共有して、他のユーザーに役立つ情報を提供しましょう！
+                                    </p>
+                                </div>
                             </div>
-                        </div>
                     </div>
                 </div>
+            </div>
+</div>
+    </div>
             </div>
         </div>
 
