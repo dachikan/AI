@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // データベース接続情報
     $host = "mysql213.phy.lolipop.lan";
     $user = "LAA1337491";
@@ -514,7 +514,31 @@ if (!function_exists('getAIServiceById')) {
         return $result->fetch_assoc();
     }
 }
-
+if (!function_exists('getPromptCategories')) {
+    /**
+     * プロンプトカテゴリ一覧を取得
+     */
+    function getPromptCategories() {
+        global $conn;
+        
+        // 接続がない場合はダミーデータを返す
+        if ($conn === null) {
+            return [['id' => 1, 'name' => 'サンプルカテゴリ']];
+        }
+        
+        $sql = "SELECT * FROM AIPromptCategories ORDER BY name ASC";
+        $result = $conn->query($sql);
+        
+        $categories = [];
+        if ($result && $result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $categories[] = $row;
+            }
+        }
+        
+        return $categories;
+    }
+}
 if (!function_exists('getPopularityRanking')) {
     /**
      * 人気ランキングを取得
