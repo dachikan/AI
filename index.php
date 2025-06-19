@@ -34,6 +34,7 @@ function isAllowedReferrer() {
     $allowedPatterns = [
 	'nsk.org' => ['exact' => true],
 	'www.nsk.org' => ['exact' => true],
+	'ai.nsk.org' => ['exact' => true],
 	'note.com' => [
 	    'exact' => false, 
 	    'path' => '/gifted_panda752/'
@@ -81,60 +82,60 @@ if (!$accessAllowed) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アクセス制限 - AI活用サンプル集</title>
+    <title>アクセス制限 - AI利用体験ポータル</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-	body {
-	    font-family: Arial, sans-serif;
-	    margin: 0;
-	    padding: 0;
-	    background: linear-gradient(135deg, #f3f4f6, #d5d7dc);
-	    display: flex;
-	    justify-content: center;
-	    align-items: center;
-	    height: 100vh;
-	}
-	.container {
-	    text-align: center;
-	    background: #fff;
-	    padding: 30px;
-	    border-radius: 15px;
-	    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-	    animation: fadeIn 1s ease-in-out;
-	    max-width: 600px;
-	}
-	@keyframes fadeIn {
-	    from { opacity: 0; }
-	    to { opacity: 1; }
-	}
-	h1 {
-	    color: #e74c3c;
-	    font-size: 24px;
-	}
-	p {
-	    margin: 20px 0;
-	    font-size: 18px;
-	    color: #555;
-	}
-	a {
-	    display: inline-block;
-	    margin: 20px auto;
-	    padding: 10px 20px;
-	    background-color: #3498db;
-	    color: #fff;
-	    text-decoration: none;
-	    border-radius: 5px;
-	    font-weight: bold;
-	    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-	}
-	a:hover {
-	    background-color: #2c81ba;
-	}
-	footer {
-	    margin-top: 20px;
-	    color: #aaa;
-	    font-size: 14px;
-	}
+		body {
+			font-family: Arial, sans-serif;
+			margin: 0;
+			padding: 0;
+			background: linear-gradient(135deg, #f3f4f6, #d5d7dc);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			height: 100vh;
+		}
+		.container {
+			text-align: center;
+			background: #fff;
+			padding: 30px;
+			border-radius: 15px;
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+			animation: fadeIn 1s ease-in-out;
+			max-width: 600px;
+		}
+		@keyframes fadeIn {
+			from { opacity: 0; }
+			to { opacity: 1; }
+		}
+		h1 {
+			color: #e74c3c;
+			font-size: 24px;
+		}
+		p {
+			margin: 20px 0;
+			font-size: 18px;
+			color: #555;
+		}
+		a {
+			display: inline-block;
+			margin: 20px auto;
+			padding: 10px 20px;
+			background-color: #3498db;
+			color: #fff;
+			text-decoration: none;
+			border-radius: 5px;
+			font-weight: bold;
+			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+		}
+		a:hover {
+			background-color: #2c81ba;
+		}
+		footer {
+			margin-top: 20px;
+			color: #aaa;
+			font-size: 14px;
+		}
     </style>
 </head>
 <body>
@@ -236,10 +237,10 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI活用サンプル集 - 初心者から上級者まで使えるAIプロンプト集</title>
+    <title>AI利用体験ポータル - 全てのジャンルの60種類のAIを利用した人の体験集</title>
     <meta name="description" content="noteで紹介した画像生成テクニックをさらに発展させた、様々なAIサービスで使える実用的なプロンプト集。画像生成からビジネス文書作成まで幅広く対応。">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
+<style>
 	/* カスタムスタイル */
 	body {
 		font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
@@ -299,7 +300,7 @@ try {
 	    font-family: monospace;
 	    margin: 15px 0;
 	}
-    </style>
+</style>
 </head>
 <body>
     <header>
@@ -338,7 +339,7 @@ try {
 		    <img src="icons/midjourney-icon.png" alt="Midjourney" height="40" class="mx-2">
 		    <img src="icons/stable-diffusion-logo.png" alt="Stable Diffusion" height="40" class="mx-2">
 		</div>
-		<a href="AI_list.php" class="btn btn-light btn-lg">サンプル一覧を見る</a>
+		<a href="ai_portal_articles.php" class="btn btn-light btn-lg">体験一覧を見る</a>
 		<p class="mt-2 text-light">現在、<span class="price-tag">このサイトは構築中です。</span>その点をご理解の上、ご利用下さい</p>
 	    </div>
 	</section>
@@ -529,9 +530,9 @@ try {
 	<!-- CTA セクション -->
 	<section class="cta-section">
 	    <div class="container text-center">
-		<h2 class="mb-4">今すぐAIプロンプトを試してみませんか？</h2>
-		<p class="lead mb-4">使ってみることであなたのAI活用スキルが大きく向上します</p>
-		<a href="AI_ranking.php" class="btn btn-success btn-lg">ランキングを見る</a>
+		<h2 class="mb-4">今すぐAI利用体験を書いてみませんか？</h2>
+		<p class="lead mb-4">使ってみたことを文章にして伝える努力をすることであなたのAI活用スキルが大きく向上します。</p>
+		<a href="ai_experience_auth.php" class="btn btn-success btn-lg">体験を文章化する</a>
 		<p class="mt-3 text-muted">※ すべてのサンプルに無制限にアクセスできます</p>
 	    </div>
 	</section>
@@ -624,8 +625,8 @@ try {
 	<div class="container">
 	    <div class="row">
 		<div class="col-md-6">
-		    <h5>AI活用サンプル集</h5>
-		    <p>様々なAIサービスで使える実用的なプロンプト集</p>
+		    <h5>AI利用体験ポータル</h5>
+		    <p>６０種類以上のＡＩを体験して文章化することを助けるサイトです</p>
 		</div>
 		<div class="col-md-3">
 		    <h5>リンク</h5>

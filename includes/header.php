@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <link rel=”icon" href="icons/favicon.png" type="image/png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= isset($pageTitle) ? $pageTitle : 'AI サービス情報' ?></title>
+    <title><?= isset($pageTitle) ? $pageTitle : 'AI利用体験ポータル' ?></title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -79,8 +79,8 @@
     <!-- ナビゲーション -->
     <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
         <div class="container">
-            <a class="navbar-brand" href="AI_dashboard.php">
-                <i class="fas fa-robot"></i> AI Portal
+            <a class="navbar-brand" href="index.php">
+                <i class="fas fa-robot"></i> ＡＩ利用体験ポータル
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -88,19 +88,25 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
+                        <a class="nav-link" href="ai_portal_articles.php">利用体験記事一覧</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="AI_list.php">ＡＩ一覧</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="AI_categories.php">ＡＩカテゴリ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="AI_ranking.php">ＡＩランキング</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="AI_comparison.php">ＡＩ比較</a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="AI_dashboard.php">ダッシュボード</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="AI_list.php">一覧</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="AI_ranking.php">ランキング</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="AI_comparison.php">比較</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="AI_categories.php">カテゴリ</a>
+                        <a class="nav-link" href="admin_articles.php"><img src="icons/bug.png" alt="admin" style="width: 20px; height: 20px;"> </a>
                     </li>
                 </ul>
                 <form class="d-flex" action="AI_search.php" method="GET">

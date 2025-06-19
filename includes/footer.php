@@ -3,22 +3,22 @@
         <div class="container">
             <div class="row">
                 <div class="col-md-6">
-                    <h5><i class="fas fa-robot"></i> AI Portal</h5>
-                    <p>最新のAIサービス情報をお届けします</p>
+                    <h5><i class="fas fa-robot"></i> AI利用体験ポータル</h5>
+                    <p>６０種類以上のＡＩを体験して文章化することを助けします</p>
                 </div>
                 <div class="col-md-6">
                     <h6>リンク</h6>
                     <ul class="list-unstyled">
-                        <li><a href="AI_dashboard.php" class="text-light">ダッシュボード</a></li>
-                        <li><a href="AI_list.php" class="text-light">一覧</a></li>
-                        <li><a href="AI_ranking.php" class="text-light">ランキング</a></li>
-                        <li><a href="AI_comparison.php" class="text-light">比較</a></li>
+                        <li><a href="indexI_list.php" class="text-light">ホーム</a></li>
+                        <li><a href="AI_list.php" class="text-light">ＡＩ一覧</a></li>
+                        <li><a href="ai_portal_articles.php" class="text-light">体験記事一覧</a></li>
+                        <li><a href="index.php#faq" class="text-light">よくある質問</a></li>
                     </ul>
                 </div>
             </div>
             <hr>
             <div class="text-center">
-                <p>&copy; 2025 喜寿プログラマ. All rights reserved.</p>
+                <p>&copy; 2025 AI利用体験ポータル. All rights reserved.</p>
             </div>
         </div>
     </footer>

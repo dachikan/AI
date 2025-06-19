@@ -21,32 +21,19 @@ $searchTerm = isset($_GET['search']) ? trim($_GET['search']) : '';
 
 // 記事一覧を取得
 $sql = "SELECT 
-    a.id,
-    a.url,
-    a.title,
-    a.summary,
-    a.article_type,
-    a.status,
-    a.is_verified,
-    a.published_at,
-    a.view_count,
-    a.helpful_count,
-    a.created_at,
-    ai.ai_service,
-    ai.id as ai_service_id,
+    a.id, a.url, a.title, a.summary, a.article_type, a.status, a.is_verified,
+    a.published_at, a.view_count, a.helpful_count, a.created_at,
+    a.thumbnail_url, -- ★追加
+    ai.ai_service, ai.id as ai_service_id,
     c.name as category_name,
     au.note_username,
-    -- プレビューテキストを生成
-    COALESCE(
-        SUBSTRING(a.summary, 1, 120),
-        SUBSTRING(a.title, 1, 120),
-        'AI活用体験記事'
-    ) as preview_text
+    au.avatar_url, -- ★追加
+    COALESCE(SUBSTRING(a.summary, 1, 120), SUBSTRING(a.title, 1, 120), 'AI活用体験記事') as preview_text
 FROM ai_articles a
 JOIN AIInfo ai ON a.ai_service_id = ai.id
-LEFT JOIN ai_users au ON a.user_id = au.id
+JOIN ai_users au ON a.user_id = au.id -- ★LEFT JOIN から JOIN に変更
 LEFT JOIN AIPromptCategories c ON a.category_id = c.id
-WHERE a.status = 'verified'"; // 認証済みの記事のみ表示
+WHERE a.status = 'verified'";
 
 $params = [];
 $types = '';
@@ -160,271 +147,118 @@ include 'includes/header.php';
 ?>
 
 <style>
-    .portal-container {
-        background-color: #fafafa;
-        min-height: 100vh;
-    }
-
-    .portal-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 40px 0;
-        margin-bottom: 30px;
-    }
-
-    .portal-title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 10px;
-    }
-
-    .portal-subtitle {
-        font-size: 1.1rem;
-        opacity: 0.9;
-    }
-
-    .filter-section {
-        background: white;
-        border-radius: 12px;
-        padding: 25px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-        margin-bottom: 25px;
-    }
-
-    .sort-tabs {
-        display: flex;
-        gap: 0;
-        background: #f8f9fa;
-        border-radius: 8px;
-        padding: 4px;
-        margin-bottom: 20px;
-        flex-wrap: wrap;
-    }
-
-    .sort-tab {
-        flex: 1;
-        min-width: 100px;
-        padding: 10px 16px;
-        background: transparent;
-        border: none;
-        border-radius: 6px;
-        font-weight: 500;
-        color: #666;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-align: center;
-        font-size: 0.9rem;
-    }
-
-    .sort-tab.active {
-        background: white;
-        color: #333;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    .sort-tab:hover:not(.active) {
-        background: rgba(255,255,255,0.5);
-    }
-
+    /* === note風グリッドレイアウト用CSS === */
     .articles-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 20px;
-        margin-top: 20px;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 24px;
     }
 
     .article-card {
-        background: white;
-        border-radius: 12px;
+        background-color: #fff;
+        border-radius: 8px;
         overflow: hidden;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: all 0.2s ease-in-out;
         cursor: pointer;
-        height: fit-content;
+        display: flex;
+        flex-direction: column;
+    }
+    .article-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+    }
+
+    .card-thumbnail-wrapper {
         position: relative;
     }
 
-    .article-card.verified {
-        border-left: 4px solid #28a745;
-    }
-
-    .verified-badge {
+    .card-verified-badge {
         position: absolute;
-        top: 10px;
-        right: 10px;
-        background: #28a745;
+        top: 8px;
+        left: 8px;
+        background-color: #28a745;
         color: white;
-        padding: 4px 8px;
-        border-radius: 12px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        z-index: 2;
-    }
-
-    .article-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    }
-
-    .article-thumbnail {
-        width: 100%;
-        height: 140px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
-        font-weight: 600;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .thumbnail-content {
-        text-align: center;
-        z-index: 1;
-    }
-
-    .ai-service-icon {
-        font-size: 2rem;
-        margin-bottom: 8px;
-    }
-
-    .article-content {
-        padding: 20px;
-    }
-
-    .article-meta {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 12px;
-    }
-
-    .ai-service-badge {
-        background: #e3f2fd;
-        color: #1976d2;
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 0.75rem;
-        font-weight: 600;
-    }
-
-    .category-badge {
-        background: #f3e5f5;
-        color: #7b1fa2;
-        padding: 4px 8px;
-        border-radius: 10px;
-        font-size: 0.7rem;
-        font-weight: 500;
-        margin-left: 8px;
-    }
-
-    .article-date {
-        color: #999;
         font-size: 0.8rem;
+        z-index: 2;
     }
 
-    .article-title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        margin-bottom: 10px;
-        line-height: 1.4;
-        color: #333;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
+    .card-thumbnail {
+        width: 100%;
+        padding-top: 56.25%; /* アスペクト比 16:9 */
+        background-size: cover;
+        background-position: center;
+        background-color: #f0f0f0; /* 画像がない場合の背景色 */
+        border-bottom: 1px solid #eee;
     }
 
-    .article-preview {
-        color: #666;
+    .card-content {
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1; /* 高さを揃えるため */
+    }
+
+    .card-title {
         font-size: 0.9rem;
+        font-weight: 600;
         line-height: 1.5;
-        margin-bottom: 15px;
+        color: #333;
+        margin: 0 0 8px 0;
+        flex-grow: 1; /* タイトルエリアの高さを可変に */
         display: -webkit-box;
-        -webkit-line-clamp: 3;
+        -webkit-line-clamp: 3; /* 3行までに制限 */
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
 
-    .article-stats {
+    .card-footer {
         display: flex;
-        align-items: center;
         justify-content: space-between;
-        padding-top: 15px;
-        border-top: 1px solid #eee;
+        align-items: center;
+        padding-top: 8px;
+        border-top: 1px solid #f5f5f5;
+        margin-top: auto; /* フッターをカード下部に固定 */
     }
 
-    .stats-left {
-        display: flex;
-        gap: 15px;
-    }
-
-    .stat-item {
+    .author-info {
         display: flex;
         align-items: center;
-        gap: 4px;
-        color: #666;
-        font-size: 0.85rem;
-    }
-
-    .note-link {
-        background: #00d4aa;
-        color: white;
-        padding: 4px 8px;
-        border-radius: 8px;
         font-size: 0.75rem;
-        text-decoration: none;
-        font-weight: 500;
+        color: #555;
+        overflow: hidden; /* はみ出し防止 */
     }
 
-    .note-link:hover {
-        background: #00b894;
-        color: white;
+    .author-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        margin-right: 6px;
+        object-fit: cover;
+        background-color: #ddd; /* アバターがない場合の背景色 */
     }
 
-    .results-header {
+    .author-name {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .card-stats {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        margin-bottom: 20px;
+        font-size: 0.8rem;
+        color: #777;
+        flex-shrink: 0; /* 縮まないようにする */
     }
-
-    .results-count {
-        color: #666;
-        font-size: 0.95rem;
-    }
-
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-        color: #666;
-    }
-
-    .empty-state i {
-        font-size: 3rem;
-        margin-bottom: 20px;
-        color: #ddd;
-    }
-
-    @media (max-width: 768px) {
-        .portal-title {
-            font-size: 2rem;
-        }
-        
-        .articles-grid {
-            grid-template-columns: 1fr;
-            gap: 16px;
-        }
-        
-        .sort-tabs {
-            flex-direction: column;
-            gap: 4px;
-        }
-        
-        .sort-tab {
-            flex: none;
-        }
+    .card-stats i {
+        margin-right: 4px;
     }
 </style>
 
@@ -509,7 +343,7 @@ include 'includes/header.php';
                     </select>
                 </div>
                 
-                <div class="col-md-2">
+                <!-- <div class="col-md-2">
                     <label class="form-label">
                         <i class="fas fa-filter"></i> 品質
                     </label>
@@ -517,7 +351,7 @@ include 'includes/header.php';
                         <option value="">すべて</option>
                         <option value="1" <?= $verifiedOnly ? 'selected' : '' ?>>確認済みのみ</option>
                     </select>
-                </div>
+                </div> -->
                 
                 <div class="col-md-2 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary me-2">
@@ -542,120 +376,50 @@ include 'includes/header.php';
 
         <!-- 記事グリッド -->
         <?php if (empty($articles)): ?>
-        <div class="empty-state">
-            <i class="fas fa-newspaper"></i>
-            <h3>記事が見つかりませんでした</h3>
-            <p>検索条件を変更するか、新しい体験記事を投稿してみてください。</p>
-            <a href="ai_experience_new.php" class="btn btn-primary mt-3">
-                <i class="fas fa-plus"></i> 体験記事を投稿する
-            </a>
-        </div>
-        <?php else: ?>
-        <div class="articles-grid">
-            <?php foreach ($articles as $article): ?>
-            <div class="article-card <?= $article['is_verified'] ? 'verified' : '' ?>" 
-                 onclick="viewArticle('<?= htmlspecialchars($article['url']) ?>', <?= $article['id'] ?>)">
-                
-                <?php if ($article['is_verified']): ?>
-                <div class="verified-badge">
-                    <i class="fas fa-check-circle"></i> 確認済み
-                </div>
-                <?php endif; ?>
-                
-                <div class="article-thumbnail">
-                    <div class="thumbnail-content">
-                        <div class="ai-service-icon">
-                            <i class="fas fa-robot"></i>
-                        </div>
-                        <div><?= htmlspecialchars($article['ai_service']) ?></div>
-                    </div>
-                </div>
-                
-                <div class="article-content">
-                    <div class="article-meta">
-                        <div>
-                            <span class="ai-service-badge">
-                                <?= htmlspecialchars($article['ai_service']) ?>
-                            </span>
-                            <?php if ($article['category_name']): ?>
-                            <span class="category-badge">
-                                <?= htmlspecialchars($article['category_name']) ?>
-                            </span>
-                            <?php endif; ?>
-                        </div>
-                        <span class="article-date">
-                            <?= date('n月j日', strtotime($article['created_at'])) ?>
-                        </span>
-                    </div>
-                    
-                    <h3 class="article-title">
-                        <?= htmlspecialchars($article['title'] ?: 'AI活用体験記事') ?>
-                    </h3>
-                    
-                    <div class="article-preview">
-                        <?= htmlspecialchars($article['preview_text']) ?>
-                        <?php if (strlen($article['preview_text']) >= 120): ?>...<?php endif; ?>
-                    </div>
-                    
-                    <div class="article-stats">
-                        <div class="stats-left">
-                            <div class="stat-item">
-                                <i class="fas fa-eye"></i>
-                                <span><?= number_format($article['view_count']) ?></span>
-                            </div>
-                            <div class="stat-item">
-                                <i class="fas fa-thumbs-up"></i>
-                                <span><?= number_format($article['helpful_count']) ?></span>
-                            </div>
-                            <div class="stat-item">
-                                <i class="fas fa-calendar"></i>
-                                <span><?= $article['article_type'] === 'new_post' ? '新規' : '既存' ?></span>
-                            </div>
-                        </div>
-                        <a href="<?= htmlspecialchars($article['url']) ?>" 
-                           class="note-link" 
-                           target="_blank" 
-                           onclick="event.stopPropagation()">
-                            <i class="fas fa-external-link-alt"></i> note
-                        </a>
-                    </div>
-                </div>
+            <div class="empty-state">
+                <i class="fas fa-newspaper"></i>
+                <h3>記事が見つかりませんでした</h3>
+                <p>検索条件を変更するか、新しい体験記事を投稿してみてください。</p>
+                <a href="ai_experience_new.php" class="btn btn-primary mt-3">
+                    <i class="fas fa-plus"></i> 体験記事を投稿する
+                </a>
             </div>
-            <?php endforeach; ?>
-        </div>
-
-            <!-- ページネーション -->
+        <?php else: ?>
+            <div class="articles-grid">
+                <?php foreach ($articles as $article): ?>
+                    <div class="article-card" onclick="viewArticle('<?= htmlspecialchars($article['url']) ?>', <?= $article['id'] ?>)">
+                        <div class="card-thumbnail-wrapper">
+                            <?php if ($article['is_verified']): ?>
+                                <div class="card-verified-badge"><i class="fas fa-check"></i></div>
+                            <?php endif; ?>
+                            <div class="card-thumbnail" style="background-image: url('<?= htmlspecialchars($article['thumbnail_url'] ?: '/path/to/default/image.png') ?>');">
+                            </div>
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">
+                                <?= htmlspecialchars($article['title']) ?>
+                            </h3>
+                            <div class="card-footer">
+                                <div class="author-info">
+                                    <img src="<?= htmlspecialchars($article['avatar_url'] ?: '/path/to/default/avatar.png') ?>" alt="<?= htmlspecialchars($article['note_username']) ?>" class="author-avatar">
+                                    <span class="author-name"><?= htmlspecialchars($article['note_username']) ?></span>
+                                </div>
+                                <div class="card-stats">
+                                    <i class="fas fa-thumbs-up"></i>
+                                    <span><?= number_format($article['helpful_count']) ?></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
             <?php if ($totalPages > 1): ?>
-            <nav aria-label="記事ページネーション" class="mt-5">
-                <ul class="pagination justify-content-center">
-                    <?php if ($page > 1): ?>
-                    <li class="page-item">
-                        <a class="page-link" href="?page=<?= $page - 1 ?>&ai_service=<?= $aiServiceId ?>&category=<?= $categoryId ?>&sort=<?= $sortBy ?>&search=<?= urlencode($searchTerm) ?>&verified=<?= $verifiedOnly ? '1' : '' ?>">
-                            <i class="fas fa-chevron-left"></i>
-                        </a>
-                    </li>
-                    <?php endif; ?>
-
-                    <?php for ($i = max(1, $page - 2); $i <= min($totalPages, $page + 2); $i++): ?>
-                    <li class="page-item <?= $i == $page ? 'active' : '' ?>">
-                        <a class="page-link" href="?page=<?= $i ?>&ai_service=<?= $aiServiceId ?>&category=<?= $categoryId ?>&sort=<?= $sortBy ?>&search=<?= urlencode($searchTerm) ?>&verified=<?= $verifiedOnly ? '1' : '' ?>">
-                            <?= $i ?>
-                        </a>
-                    </li>
-                    <?php endfor; ?>
-
-                    <?php if ($page < $totalPages): ?>
-                    <li class="page-item">
-                        <a class="page-link" href="?page=<?= $page + 1 ?>&ai_service=<?= $aiServiceId ?>&category=<?= $categoryId ?>&sort=<?= $sortBy ?>&search=<?= urlencode($searchTerm) ?>&verified=<?= $verifiedOnly ? '1' : '' ?>">
-                            <i class="fas fa-chevron-right"></i>
-                        </a>
-                    </li>
-                    <?php endif; ?>
-                </ul>
-            </nav>
-            <?php endif; ?>
-
+                <?php endif; ?>
         <?php endif; ?>
+
+        <!-- ページネーション -->
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination
     </div>
 </div>
 

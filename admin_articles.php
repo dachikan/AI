@@ -86,17 +86,11 @@ include 'includes/header.php';
     <?php
     // 管理対象の記事を取得
     $adminSql = "SELECT 
-        a.id,
-        a.url,
-        a.title,
-        a.summary,
-        a.status,
-        a.is_verified,
-        a.admin_notes,
-        a.created_at,
+        a.id, a.title, a.url, a.status, a.is_verified, a.created_at,
+        a.thumbnail_url,
         ai.ai_service,
         c.name as category_name,
-        au.note_username
+        au.note_username, au.avatar_url
     FROM ai_articles a
     JOIN AIInfo ai ON a.ai_service_id = ai.id
     LEFT JOIN ai_users au ON a.user_id = au.id
@@ -123,7 +117,17 @@ include 'includes/header.php';
                 <div class="card-body">
                     <h6 class="card-title">
                         <?= htmlspecialchars($article['title'] ?: '無題') ?>
+                        <?php if (!empty($article['avatar_url'])): ?>
+                            <img src="<?= htmlspecialchars($article['avatar_url']) ?>" alt="avatar" style="width: 40px; height: 40px; border-radius: 50%;">
+                        <?php else: ?>
+                            <span style="color: #ccc;">(avatarなし)</span>
+                        <?php endif; ?>
                     </h6>
+                    <?php if (!empty($article['thumbnail_url'])): ?>
+                        <img src="<?= htmlspecialchars($article['thumbnail_url']) ?>" alt="thumbnail" style="width: 100px; object-fit: cover;">
+                    <?php else: ?>
+                        <span style="color: #ccc;">(thambnailなし)</span>
+                    <?php endif; ?>
                     <p class="card-text">
                         <small class="text-muted">
                             <i class="fas fa-robot"></i> <?= htmlspecialchars($article['ai_service']) ?>
@@ -174,6 +178,9 @@ include 'includes/header.php';
                         <button type="submit" name="update_verification" class="btn btn-sm btn-primary">
                             <i class="fas fa-save"></i> 更新
                         </button>
+                        <button class="btn btn-sm btn-secondary" onclick="refetchData(<?= $article['id'] ?>)">
+                            画像再取得
+                        </button>
                     </form>
                 </div>
             </div>
@@ -190,5 +197,36 @@ include 'includes/header.php';
     
     <?php endif; ?>
 </div>
+<script>
+function refetchData(articleId) {
+    const button = event.target;
+    button.disabled = true;
+    button.textContent = '取得中...';
 
+    fetch('api_refetch_data.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ article_id: articleId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('データの再取得に成功しました。ページをリロードします。');
+            location.reload();
+        } else {
+            alert('エラー: ' + data.message);
+            button.disabled = false;
+            button.textContent = '画像再取得';
+        }
+    })
+    .catch(error => {
+        alert('通信エラーが発生しました。');
+        console.error('Error:', error);
+        button.disabled = false;
+        button.textContent = '画像再取得';
+    });
+}
+</script>
 <?php include 'includes/footer.php'; ?>

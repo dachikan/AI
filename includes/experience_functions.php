@@ -22,6 +22,36 @@ function validateNoteUrl($url) {
 }
 
 /**
+ * noteユーザーの情報を取得（アバターなど）
+ */
+function getNoteUserInfo($username) {
+    try {
+        $url = 'https://note.com/' . rawurlencode($username);
+        $context = stream_context_create([
+            'http' => [
+                'method' => 'GET',
+                'header' => 'User-Agent: Mozilla/5.0 (compatible; AI Experience Bot/1.0)',
+                'timeout' => 10
+            ]
+        ]);
+
+        $html = file_get_contents($url, false, $context);
+        if ($html === false) {
+            return ['success' => false, 'avatar_url' => ''];
+        }
+
+        // ユーザーページのOGP画像（アバター）を抽出
+        preg_match('/<meta\s+property=["\']og:image["\']\s+content=["\'](.*?)["\']\s*\/?>/i', $html, $imageMatches);
+        $avatarUrl = isset($imageMatches[1]) ? html_entity_decode($imageMatches[1]) : '';
+
+        return ['success' => true, 'avatar_url' => $avatarUrl];
+
+    } catch (Exception $e) {
+        return ['success' => false, 'avatar_url' => ''];
+    }
+}
+
+/**
  * note記事の内容を取得・解析
  */
 function analyzeNoteArticle($url) {
@@ -43,7 +73,13 @@ function analyzeNoteArticle($url) {
         // HTMLからタイトルを抽出
         preg_match('/<title[^>]*>(.*?)<\/title>/i', $html, $titleMatches);
         $title = isset($titleMatches[1]) ? html_entity_decode(strip_tags($titleMatches[1])) : '';
-        
+
+        // ★★★★★ ここから追加 ★★★★★
+        // OGP画像（サムネイル）を抽出
+        preg_match('/<meta\s+property=["\']og:image["\']\s+content=["\'](.*?)["\']\s*\/?>/i', $html, $imageMatches);
+        $thumbnailUrl = isset($imageMatches[1]) ? html_entity_decode($imageMatches[1]) : '';
+        // ★★★★★ ここまで追加 ★★★★★
+
         // noteのユーザー名を抽出
         preg_match('/note\.com\/([^\/]+)\//', $url, $usernameMatches);
         $username = isset($usernameMatches[1]) ? $usernameMatches[1] : '';
@@ -54,6 +90,7 @@ function analyzeNoteArticle($url) {
         return [
             'success' => true,
             'title' => $title,
+            'thumbnail_url' => $thumbnailUrl, // 取得したサムネイルURLを返す
             'username' => $username,
             'content' => $content,
             'summary' => mb_substr($content, 0, 200) . '...'
@@ -89,8 +126,9 @@ function processNewArticle($sessionId, $noteUrl, $noteUsername, $email) {
     }
     
     // 記事を登録
-    $sql = "INSERT INTO ai_articles (user_id, ai_service_id, url, title, summary, article_type, experience_log_id, status) 
-            VALUES (?, ?, ?, ?, ?, 'new_post', ?, 'pending')";
+    // ★★★SQL文を変更★★★
+    $sql = "INSERT INTO ai_articles (user_id, ai_service_id, url, title, summary, thumbnail_url, article_type, experience_log_id, status) 
+            VALUES (?, ?, ?, ?, ?, ?, 'new_post', ?, 'pending')";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("iisssi", $userId, $experienceLog['ai_service_id'], $noteUrl, 
                       $analysis['title'], $analysis['summary'], $experienceLog['id']);
@@ -126,11 +164,12 @@ function processExistingArticle($noteUrl, $noteUsername, $email, $aiServiceId) {
     }
     
     // 記事を登録（既存記事は即座にverifiedステータス）
-    $sql = "INSERT INTO ai_articles (user_id, ai_service_id, url, title, summary, article_type, status) 
-            VALUES (?, ?, ?, ?, ?, 'existing_post', 'verified')";
+    // ★★★SQL文を変更★★★
+    $sql = "INSERT INTO ai_articles (user_id, ai_service_id, url, title, summary, thumbnail_url, article_type, status) 
+            VALUES (?, ?, ?, ?, ?, ?, 'existing_post', 'verified')";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("iisss", $userId, $aiServiceId, $noteUrl, $analysis['title'], $analysis['summary']);
-    
+    // ★★★bind_paramを変更★★★
+    $stmt->bind_param("iissssi", $userId, $aiServiceId, $noteUrl, $analysis['title'], $analysis['summary'], $analysis['thumbnail_url']);
     if ($stmt->execute()) {
         return ['success' => true, 'article_id' => $conn->insert_id];
     } else {
@@ -155,10 +194,16 @@ function createOrGetUser($noteUsername, $email, $authType) {
         return $row['id'];
     }
     
+// ★★★ここから変更★★★
+    // 新規ユーザーのアバター情報を取得
+    $userInfo = getNoteUserInfo($noteUsername);
+    $avatarUrl = $userInfo['success'] ? $userInfo['avatar_url'] : '';
+
     // 新規ユーザーを作成
-    $sql = "INSERT INTO ai_users (note_username, email, auth_type) VALUES (?, ?, ?)";
+    $sql = "INSERT INTO ai_users (note_username, email, avatar_url, auth_type) VALUES (?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
-    $stmt->bind_param("sss", $noteUsername, $email, $authType);
+    $stmt->bind_param("ssss", $noteUsername, $email, $avatarUrl, $authType);
+    // ★★★ここまで変更★★★
     
     if ($stmt->execute()) {
         return $conn->insert_id;
