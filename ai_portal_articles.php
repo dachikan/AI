@@ -9,7 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // ページネーション設定
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
-$limit = 12;
+$limit = 80;
 $offset = ($page - 1) * $limit;
 
 // フィルター・ソート設定
@@ -31,7 +31,7 @@ $sql = "SELECT
     COALESCE(SUBSTRING(a.summary, 1, 120), SUBSTRING(a.title, 1, 120), 'AI活用体験記事') as preview_text
 FROM ai_articles a
 JOIN AIInfo ai ON a.ai_service_id = ai.id
-JOIN ai_users au ON a.user_id = au.id -- ★LEFT JOIN から JOIN に変更
+JOIN ai_users au ON a.user_id = au.id
 LEFT JOIN AIPromptCategories c ON a.category_id = c.id
 WHERE a.status = 'verified'";
 
@@ -143,6 +143,21 @@ $aiServices = getAIServices();
 // カテゴリ一覧
 $categories = getPromptCategories();
 
+// ページネーション用のURL生成関数
+function buildPaginationUrl($targetPage, $currentParams) {
+    $params = $currentParams;
+    $params['page'] = $targetPage;
+    return '?' . http_build_query($params);
+}
+
+// 現在のフィルター・ソートパラメータを保持
+$currentParams = [];
+if ($aiServiceId > 0) $currentParams['ai_service'] = $aiServiceId;
+if ($categoryId > 0) $currentParams['category'] = $categoryId;
+if ($verifiedOnly) $currentParams['verified'] = '1';
+if ($sortBy !== 'created_at') $currentParams['sort'] = $sortBy;
+if (!empty($searchTerm)) $currentParams['search'] = $searchTerm;
+
 include 'includes/header.php';
 ?>
 
@@ -239,7 +254,7 @@ include 'includes/header.php';
         width: 24px;
         height: 24px;
         border-radius: 50%;
-        margin-right: 6px;
+        margin-right: 160px;
         object-fit: cover;
         background-color: #ddd; /* アバターがない場合の背景色 */
     }
@@ -260,6 +275,57 @@ include 'includes/header.php';
     .card-stats i {
         margin-right: 4px;
     }
+
+    /* ページネーション用CSS */
+    .pagination {
+        justify-content: center;
+        margin-top: 2rem;
+    }
+
+    .pagination .page-link {
+        color: #007bff;
+        border: 1px solid #dee2e6;
+        padding: 0.5rem 0.75rem;
+        margin: 0 2px;
+        border-radius: 4px;
+        text-decoration: none;
+        transition: all 0.2s ease-in-out;
+    }
+
+    .pagination .page-link:hover {
+        background-color: #e9ecef;
+        border-color: #adb5bd;
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+        color: white;
+    }
+
+    .pagination .page-item.disabled .page-link {
+        color: #6c757d;
+        background-color: #fff;
+        border-color: #dee2e6;
+        cursor: not-allowed;
+    }
+
+    .pagination-info {
+        text-align: center;
+        margin-top: 1rem;
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    .card-summary {
+    font-size: 0.8rem;
+    color: #666;
+    margin: 0 0 8px 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2; /* 2行までに制限 */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.4;
+}
 </style>
 
 <div class="portal-container">
@@ -343,16 +409,6 @@ include 'includes/header.php';
                     </select>
                 </div>
                 
-                <!-- <div class="col-md-2">
-                    <label class="form-label">
-                        <i class="fas fa-filter"></i> 品質
-                    </label>
-                    <select name="verified" class="form-select">
-                        <option value="">すべて</option>
-                        <option value="1" <?= $verifiedOnly ? 'selected' : '' ?>>確認済みのみ</option>
-                    </select>
-                </div> -->
-                
                 <div class="col-md-2 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary me-2">
                         <i class="fas fa-search"></i> 検索
@@ -370,6 +426,11 @@ include 'includes/header.php';
                 <strong><?= number_format($totalArticles) ?>件</strong>のAI活用体験記事
                 <?php if ($verifiedOnly): ?>
                 <span class="badge bg-success ms-2">確認済みのみ</span>
+                <?php endif; ?>
+                <?php if ($totalPages > 1): ?>
+                <span class="ms-2 text-muted">
+                    (<?= $page ?>/<?= $totalPages ?>ページ)
+                </span>
                 <?php endif; ?>
             </div>
         </div>
@@ -397,14 +458,18 @@ include 'includes/header.php';
                         </div>
                         <div class="card-content">
                             <h3 class="card-title">
-                                <?= htmlspecialchars($article['title']) ?>
+                                <?= $article['id'].".".htmlspecialchars($article['title']) ?>
                             </h3>
                             <div class="card-footer">
                                 <div class="author-info">
                                     <img src="<?= htmlspecialchars($article['avatar_url'] ?: '/path/to/default/avatar.png') ?>" alt="<?= htmlspecialchars($article['note_username']) ?>" class="author-avatar">
-                                    <span class="author-name"><?= htmlspecialchars($article['note_username']) ?></span>
-                                </div>
-                                <div class="card-stats">
+                                    </div>
+                                <!-- サマリ表示を追加 -->
+                                <p class="card-summary">
+                                    <span class="author-name"><b><?= htmlspecialchars($article['note_username']) ?></b></span>
+                                    <?= htmlspecialchars($article['preview_text']) ?>
+                                </p>
+                                <div class="card-footer">
                                     <i class="fas fa-thumbs-up"></i>
                                     <span><?= number_format($article['helpful_count']) ?></span>
                                 </div>
@@ -413,13 +478,94 @@ include 'includes/header.php';
                     </div>
                 <?php endforeach; ?>
             </div>
-            <?php if ($totalPages > 1): ?>
-                <?php endif; ?>
-        <?php endif; ?>
 
-        <!-- ページネーション -->
-        <nav aria-label="Page navigation" class="mt-4">
-            <ul class="pagination
+            <!-- ページネーション -->
+            <?php if ($totalPages > 1): ?>
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination">
+                        <!-- 前のページ -->
+                        <?php if ($page > 1): ?>
+                            <li class="page-item">
+                                <a class="page-link" href="<?= buildPaginationUrl($page - 1, $currentParams) ?>" aria-label="前のページ">
+                                    <i class="fas fa-chevron-left"></i> 前
+                                </a>
+                            </li>
+                        <?php else: ?>
+                            <li class="page-item disabled">
+                                <span class="page-link">
+                                    <i class="fas fa-chevron-left"></i> 前
+                                </span>
+                            </li>
+                        <?php endif; ?>
+
+                        <!-- ページ番号 -->
+                        <?php
+                        // ページネーションの表示範囲を計算
+                        $start = max(1, $page - 2);
+                        $end = min($totalPages, $page + 2);
+                        
+                        // 最初のページを表示
+                        if ($start > 1): ?>
+                            <li class="page-item">
+                                <a class="page-link" href="<?= buildPaginationUrl(1, $currentParams) ?>">1</a>
+                            </li>
+                            <?php if ($start > 2): ?>
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            <?php endif; ?>
+                        <?php endif; ?>
+
+                        <!-- 現在のページ周辺のページ番号 -->
+                        <?php for ($i = $start; $i <= $end; $i++): ?>
+                            <li class="page-item <?= $i == $page ? 'active' : '' ?>">
+                                <?php if ($i == $page): ?>
+                                    <span class="page-link"><?= $i ?></span>
+                                <?php else: ?>
+                                    <a class="page-link" href="<?= buildPaginationUrl($i, $currentParams) ?>"><?= $i ?></a>
+                                <?php endif; ?>
+                            </li>
+                        <?php endfor; ?>
+
+                        <!-- 最後のページを表示 -->
+                        <?php if ($end < $totalPages): ?>
+                            <?php if ($end < $totalPages - 1): ?>
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            <?php endif; ?>
+                            <li class="page-item">
+                                <a class="page-link" href="<?= buildPaginationUrl($totalPages, $currentParams) ?>"><?= $totalPages ?></a>
+                            </li>
+                        <?php endif; ?>
+
+                        <!-- 次のページ -->
+                        <?php if ($page < $totalPages): ?>
+                            <li class="page-item">
+                                <a class="page-link" href="<?= buildPaginationUrl($page + 1, $currentParams) ?>" aria-label="次のページ">
+                                    次 <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        <?php else: ?>
+                            <li class="page-item disabled">
+                                <span class="page-link">
+                                    次 <i class="fas fa-chevron-right"></i>
+                                </span>
+                            </li>
+                        <?php endif; ?>
+                    </ul>
+                </nav>
+
+                <!-- ページネーション情報 -->
+                <div class="pagination-info">
+                    <?php
+                    $startItem = ($page - 1) * $limit + 1;
+                    $endItem = min($page * $limit, $totalArticles);
+                    ?>
+                    <?= number_format($startItem) ?>-<?= number_format($endItem) ?>件目 / 全<?= number_format($totalArticles) ?>件
+                </div>
+            <?php endif; ?>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -427,7 +573,7 @@ include 'includes/header.php';
 function changeSort(sortType) {
     const url = new URL(window.location);
     url.searchParams.set('sort', sortType);
-    url.searchParams.set('page', '1');
+    url.searchParams.set('page', '1'); // ソート変更時は1ページ目に戻る
     window.location.href = url.toString();
 }
 

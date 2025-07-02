@@ -22,82 +22,145 @@ function validateNoteUrl($url) {
 }
 
 /**
- * noteユーザーの情報を取得（アバターなど）
+ * note記事の情報を解析する関数
+ * 
+ * @param string $url note記事のURL
+ * @return array 記事情報
+ */
+function analyzeNoteArticle($url) {
+    $userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
+    
+    // URLの正規化
+    $url = trim($url);
+    if (strpos($url, 'http') !== 0) {
+        $url = 'https://' . $url;
+    }
+    
+    // noteのURLかチェック
+    if (strpos($url, 'note.com') === false && strpos($url, 'note.mu') === false) {
+        return [
+            'success' => false,
+            'error' => '無効なnoteのURLです'
+        ];
+    }
+    
+    // HTMLを取得
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'GET',
+            'header' => [
+                'User-Agent: ' . $userAgent,
+                'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language: ja,en-US;q=0.7,en;q=0.3',
+                'Connection: keep-alive',
+            ],
+            'timeout' => 30,
+        ]
+    ]);
+    
+    $html = @file_get_contents($url, false, $context);
+    
+    if ($html === false) {
+        return [
+            'success' => false,
+            'error' => 'HTMLの取得に失敗しました'
+        ];
+    }
+    
+    // DOMDocumentでHTMLを解析
+    $dom = new DOMDocument();
+    libxml_use_internal_errors(true);
+    $dom->loadHTML($html);
+    libxml_clear_errors();
+    
+    $xpath = new DOMXPath($dom);
+    
+    // タイトルを取得
+    $title = 'タイトル不明';
+    $ogTitle = $xpath->query('//meta[@property="og:title"]/@content');
+    if ($ogTitle->length > 0) {
+        $title = trim($ogTitle->item(0)->nodeValue);
+    } else {
+        $titleTag = $xpath->query('//title');
+        if ($titleTag->length > 0) {
+            $title = trim(str_replace('｜note', '', $titleTag->item(0)->nodeValue));
+        }
+    }
+    
+    // サムネイル画像URLを取得
+    $thumbnailUrl = null;
+    $ogImage = $xpath->query('//meta[@property="og:image"]/@content');
+    if ($ogImage->length > 0) {
+        $thumbnailUrl = $ogImage->item(0)->nodeValue;
+        // 相対URLを絶対URLに変換
+        if (strpos($thumbnailUrl, '//') === 0) {
+            $thumbnailUrl = 'https:' . $thumbnailUrl;
+        } elseif (strpos($thumbnailUrl, '/') === 0) {
+            $thumbnailUrl = 'https://note.com' . $thumbnailUrl;
+        }
+    }
+    
+    // ユーザー名を取得
+    $username = '著者不明';
+    $ogSiteName = $xpath->query('//meta[@property="og:site_name"]/@content');
+    if ($ogSiteName->length > 0) {
+        $username = trim($ogSiteName->item(0)->nodeValue);
+    } else {
+        // URLからユーザー名を抽出
+        if (preg_match('/note\.com\/([^\/]+)\//', $url, $matches)) {
+            $username = $matches[1];
+        }
+    }
+    
+    // 概要を取得
+    $summary = '';
+    $ogDescription = $xpath->query('//meta[@property="og:description"]/@content');
+    if ($ogDescription->length > 0) {
+        $summary = trim($ogDescription->item(0)->nodeValue);
+        // 長すぎる場合は切り詰める
+        if (mb_strlen($summary) > 150) {
+            $summary = mb_substr($summary, 0, 150) . '...';
+        }
+    }
+    
+    return [
+        'success' => true,
+        'title' => $title,
+        'thumbnail_url' => $thumbnailUrl,
+        'username' => $username,
+        'summary' => $summary,
+    ];
+}
+
+
+/**
+ * noteユーザーの情報を取得（アバターなど） (JSONデータ抽出方式)
  */
 function getNoteUserInfo($username) {
     try {
         $url = 'https://note.com/' . rawurlencode($username);
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'GET',
-                'header' => 'User-Agent: Mozilla/5.0 (compatible; AI Experience Bot/1.0)',
-                'timeout' => 10
-            ]
-        ]);
-
-        $html = file_get_contents($url, false, $context);
-        if ($html === false) {
+        $html = file_get_contents($url);
+        if ($html === false || empty($html)) {
             return ['success' => false, 'avatar_url' => ''];
         }
 
-        // ユーザーページのOGP画像（アバター）を抽出
-        preg_match('/<meta\s+property=["\']og:image["\']\s+content=["\'](.*?)["\']\s*\/?>/i', $html, $imageMatches);
-        $avatarUrl = isset($imageMatches[1]) ? html_entity_decode($imageMatches[1]) : '';
+        preg_match('/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/', $html, $matches);
+        if (empty($matches[1])) {
+            return ['success' => false, 'avatar_url' => ''];
+        }
+
+        $jsonData = json_decode($matches[1]);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+             return ['success' => false, 'avatar_url' => ''];
+        }
+
+        // ユーザーページのJSON構造からアバター画像を取得
+        $avatarUrl = $jsonData->props->pageProps->page->user->profileImageUrl ?? '';
 
         return ['success' => true, 'avatar_url' => $avatarUrl];
 
     } catch (Exception $e) {
         return ['success' => false, 'avatar_url' => ''];
-    }
-}
-
-/**
- * note記事の内容を取得・解析
- */
-function analyzeNoteArticle($url) {
-    try {
-        // User-Agentを設定してHTTPリクエスト
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'GET',
-                'header' => 'User-Agent: Mozilla/5.0 (compatible; AI Experience Bot/1.0)',
-                'timeout' => 10
-            ]
-        ]);
-        
-        $html = file_get_contents($url, false, $context);
-        if ($html === false) {
-            return ['success' => false, 'message' => '記事の取得に失敗しました'];
-        }
-        
-        // HTMLからタイトルを抽出
-        preg_match('/<title[^>]*>(.*?)<\/title>/i', $html, $titleMatches);
-        $title = isset($titleMatches[1]) ? html_entity_decode(strip_tags($titleMatches[1])) : '';
-
-        // ★★★★★ ここから追加 ★★★★★
-        // OGP画像（サムネイル）を抽出
-        preg_match('/<meta\s+property=["\']og:image["\']\s+content=["\'](.*?)["\']\s*\/?>/i', $html, $imageMatches);
-        $thumbnailUrl = isset($imageMatches[1]) ? html_entity_decode($imageMatches[1]) : '';
-        // ★★★★★ ここまで追加 ★★★★★
-
-        // noteのユーザー名を抽出
-        preg_match('/note\.com\/([^\/]+)\//', $url, $usernameMatches);
-        $username = isset($usernameMatches[1]) ? $usernameMatches[1] : '';
-        
-        // 記事の本文を簡易的に抽出（実際にはより詳細な解析が必要）
-        $content = strip_tags($html);
-        
-        return [
-            'success' => true,
-            'title' => $title,
-            'thumbnail_url' => $thumbnailUrl, // 取得したサムネイルURLを返す
-            'username' => $username,
-            'content' => $content,
-            'summary' => mb_substr($content, 0, 200) . '...'
-        ];
-        
-    } catch (Exception $e) {
-        return ['success' => false, 'message' => '記事の解析中にエラーが発生しました: ' . $e->getMessage()];
     }
 }
 

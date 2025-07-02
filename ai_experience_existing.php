@@ -277,15 +277,6 @@ if (isset($_POST['ajax_fetch_title']) && !empty($_POST['url'])) {
         
         return '';
     }
-    
-    $title = fetchNoteTitleAjax($url);
-    
-    if (!empty($title)) {
-        echo json_encode(['success' => true, 'title' => $title]);
-    } else {
-        echo json_encode(['success' => false, 'error' => 'Title not found']);
-    }
-    exit;
 }
 
 // 通常のページ処理はここから
@@ -298,7 +289,7 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 
 require_once 'includes/db_connect.php';
-
+require_once 'includes/experience_functions.php';
 // 以下、既存のコードを続ける...
     
     $title = fetchNoteTitle($url);
@@ -340,6 +331,7 @@ function fetchNoteTitle($url) {
 }
 
 include 'includes/header.php';
+
 ?>
 
 <div class="container py-4">

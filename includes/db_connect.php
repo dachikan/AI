@@ -35,7 +35,29 @@ try {
     // ダミーデータを使用するモードに設定
     $conn = null;
 }
+function save_article($title, $ai_name, $thumbnail_url) {
+    global $pdo; // PDOインスタンス
 
+    // 既存記事の検索
+    $stmt = $pdo->prepare("SELECT id, thumbnail_url FROM articles WHERE title = ? AND ai_name = ?");
+    $stmt->execute([$title, $ai_name]);
+    $article = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($article) {
+        // サムネイル未登録なら再トライ
+        if (empty($article['thumbnail_url']) && !empty($thumbnail_url)) {
+            $update = $pdo->prepare("UPDATE articles SET thumbnail_url = ? WHERE id = ?");
+            $update->execute([$thumbnail_url, $article['id']]);
+        }
+        // 既に登録済みなら何もしない
+        return $article['id'];
+    } else {
+        // 新規登録
+        $insert = $pdo->prepare("INSERT INTO articles (title, ai_name, thumbnail_url) VALUES (?, ?, ?)");
+        $insert->execute([$title, $ai_name, $thumbnail_url]);
+        return $pdo->lastInsertId();
+    }
+}
 /**
 * カテゴリごとの試行結果数を取得
 */
@@ -720,5 +742,80 @@ function savePostHistory($aiServiceId, $templateType, $userData, $generatedConte
     );
     
     return $stmt->execute();
+}
+/**
+ * ユーザーを登録または更新
+ */
+function saveUser($noteUsername, $displayName, $avatarUrl) {
+    global $conn;
+    
+    if ($conn === null) {
+        return false;
+    }
+    
+    // 既存ユーザーを検索
+    $stmt = $conn->prepare("SELECT id FROM ai_users WHERE note_username = ?");
+    $stmt->bind_param("s", $noteUsername);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $user = $result->fetch_assoc();
+    
+    if ($user) {
+        // 既存ユーザーを更新
+        $update = $conn->prepare("UPDATE ai_users SET display_name = ?, avatar_url = ? WHERE id = ?");
+        $update->bind_param("ssi", $displayName, $avatarUrl, $user['id']);
+        return $update->execute() ? $user['id'] : false;
+    } else {
+        // 新規ユーザーを登録
+        $insert = $conn->prepare("INSERT INTO ai_users (note_username, display_name, avatar_url, created_at) VALUES (?, ?, ?, NOW())");
+        $insert->bind_param("sss", $noteUsername, $displayName, $avatarUrl);
+        return $insert->execute() ? $conn->insert_id : false;
+    }
+}
+
+/**
+ * 記事を登録
+ */
+function saveArticle($userId, $aiServiceId, $title, $url, $summary, $thumbnailUrl, $categoryId = null) {
+    global $conn;
+    
+    if ($conn === null) {
+        return false;
+    }
+    
+    // トランザクション開始
+    $conn->begin_transaction();
+    
+    try {
+        // 既存記事を検索
+        $stmt = $conn->prepare("SELECT id FROM ai_articles WHERE url = ?");
+        $stmt->bind_param("s", $url);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $article = $result->fetch_assoc();
+        
+        if ($article) {
+            // 既存記事を更新
+            $update = $conn->prepare("UPDATE ai_articles SET title = ?, summary = ?, thumbnail_url = ?, category_id = ?, updated_at = NOW() WHERE id = ?");
+            $update->bind_param("sssii", $title, $summary, $thumbnailUrl, $categoryId, $article['id']);
+            $update->execute();
+            $articleId = $article['id'];
+        } else {
+            // 新規記事を登録
+            $insert = $conn->prepare("INSERT INTO ai_articles (user_id, ai_service_id, title, url, summary, thumbnail_url, category_id, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW(), NOW())");
+            $insert->bind_param("iissssi", $userId, $aiServiceId, $title, $url, $summary, $thumbnailUrl, $categoryId);
+            $insert->execute();
+            $articleId = $conn->insert_id;
+        }
+        
+        // トランザクションコミット
+        $conn->commit();
+        return $articleId;
+    } catch (Exception $e) {
+        // エラーが発生したらロールバック
+        $conn->rollback();
+        error_log("記事保存エラー: " . $e->getMessage());
+        return false;
+    }
 }
 ?>

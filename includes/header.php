@@ -88,25 +88,28 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="ai_portal_articles.php">利用体験記事一覧</a>
+                        <a class="nav-link" href="ai_portal_articles.php">記事一覧</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="AI_list.php">ＡＩ一覧</a>
+                        <a class="nav-link" href="AI_list.php">AI一覧</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="AI_categories.php">ＡＩカテゴリ</a>
+                        <a class="nav-link" href="AI_categories.php">カテゴリ</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="AI_ranking.php">ＡＩランキング</a>
+                        <a class="nav-link" href="AI_ranking.php">ランキング</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="AI_comparison.php">ＡＩ比較</a>
+                        <a class="nav-link" href="AI_comparison.php">比較</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="AI_dashboard.php">ダッシュボード</a>
+                        <a class="nav-link" href="AI_dashboard.php">dashboard</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="admin_articles.php"><img src="icons/bug.png" alt="admin" style="width: 20px; height: 20px;"> </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="note_article_info.php"><img src="icons/bug2.png" alt="admin" style="width: 20px; height: 20px;"> </a>
                     </li>
                 </ul>
                 <form class="d-flex" action="AI_search.php" method="GET">
