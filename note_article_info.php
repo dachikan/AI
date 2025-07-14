@@ -132,6 +132,8 @@ function debugLog($message) {
 </style>
 </head>
 <body>
+    <?php include 'includes/header.php';
+?>
     <div class="container py-5">
         <div class="form-container shadow-sm">
             <h1 class="text-center mb-4">note記事のURLから情報を取得・保存</h1>
@@ -373,22 +375,22 @@ function debugLog($message) {
                 $conn->commit();
                 debugLog("データベース処理が正常に完了");
                 
-echo '<div class="card mb-4">';
-echo '<img src="' . htmlspecialchars($thumbnail_url) . '" class="card-img-top" alt="サムネイル">';
-echo '<div class="card-body">';
-echo '<h5 class="card-title">' . htmlspecialchars($title) . '</h5>';
-echo '<p class="card-text">' . htmlspecialchars($summary) . '</p>';
+                echo '<div class="card mb-4">';
+                echo '<img src="' . htmlspecialchars($thumbnail_url) . '" class="card-img-top" alt="サムネイル">';
+                echo '<div class="card-body">';
+                echo '<h5 class="card-title">' . htmlspecialchars($title) . '</h5>';
+                echo '<p class="card-text">' . htmlspecialchars($summary) . '</p>';
 
-// ユーザー情報表示部分（note風）
-echo '<div class="author-info">';
-if (!empty($avatar_url)) {
-    echo '<img src="' . htmlspecialchars($avatar_url) . '" class="avatar-img" alt="著者アバター">';
-}
-echo '<span class="username">' . htmlspecialchars($note_username) . '</span>';
-echo '</div>';
+                // ユーザー情報表示部分（note風）
+                echo '<div class="author-info">';
+                if (!empty($avatar_url)) {
+                    echo '<img src="' . htmlspecialchars($avatar_url) . '" class="avatar-img" alt="著者アバター">';
+                }
+                echo '<span class="username">' . htmlspecialchars($note_username) . '</span>';
+                echo '</div>';
 
-echo '</div>'; // card-body
-echo '</div>'; // card
+                echo '</div>'; // card-body
+                echo '</div>'; // card
 
                 $conn->commit();
             } catch (Exception $e) {

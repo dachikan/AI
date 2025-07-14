@@ -35,29 +35,83 @@ try {
     // ダミーデータを使用するモードに設定
     $conn = null;
 }
-function save_article($title, $ai_name, $thumbnail_url) {
-    global $pdo; // PDOインスタンス
 
-    // 既存記事の検索
-    $stmt = $pdo->prepare("SELECT id, thumbnail_url FROM articles WHERE title = ? AND ai_name = ?");
-    $stmt->execute([$title, $ai_name]);
-    $article = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($article) {
-        // サムネイル未登録なら再トライ
-        if (empty($article['thumbnail_url']) && !empty($thumbnail_url)) {
-            $update = $pdo->prepare("UPDATE articles SET thumbnail_url = ? WHERE id = ?");
-            $update->execute([$thumbnail_url, $article['id']]);
-        }
-        // 既に登録済みなら何もしない
-        return $article['id'];
-    } else {
-        // 新規登録
-        $insert = $pdo->prepare("INSERT INTO articles (title, ai_name, thumbnail_url) VALUES (?, ?, ?)");
-        $insert->execute([$title, $ai_name, $thumbnail_url]);
-        return $pdo->lastInsertId();
+function fetch_note_article_info($url) {
+    // 記事URLのバリデーション
+    if (!preg_match('#^https://note\.com/([^/]+)/n/([a-zA-Z0-9]+)#', $url, $matches)) {
+        return null;
     }
+    $note_userId = $matches[1];
+    $article_id = $matches[2];
+
+    // HTML取得
+    $context = stream_context_create([
+        'http' => [
+            'header' => 'User-Agent: Mozilla/5.0',
+            'timeout' => 10
+        ]
+    ]);
+    $html = @file_get_contents($url, false, $context);
+    if (!$html) return null;
+
+    // DOM解析
+    libxml_use_internal_errors(true);
+    $doc = new DOMDocument();
+    @$doc->loadHTML($html);
+    $xpath = new DOMXPath($doc);
+
+    // メタ情報取得
+    $title_full = '';
+    $nodes = $xpath->query("//meta[@property='og:title']/@content");
+    if ($nodes->length > 0) $title_full = $nodes[0]->nodeValue;
+
+    $title = explode('｜', $title_full)[0] ?? $title_full;
+    $note_username = explode('｜', $title_full)[1] ?? '';
+    $summary = '';
+    $nodes = $xpath->query("//meta[@name='description']/@content");
+    if ($nodes->length > 0) $summary = mb_substr($nodes[0]->nodeValue, 0, 150);
+    $thumbnail_url = '';
+    $nodes = $xpath->query("//meta[@property='og:image']/@content");
+    if ($nodes->length > 0) $thumbnail_url = $nodes[0]->nodeValue;
+
+    // アバター画像
+    $avatar_url = '';
+    // ...（note_article_info.phpのロジックを移植。省略可）
+
+    // ユーザーIDをDBから取得または登録
+    global $conn;
+    $user_id = null;
+    if ($conn) {
+        $stmt = $conn->prepare("SELECT id FROM ai_users WHERE note_userId = ?");
+        $stmt->bind_param("s", $note_userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result && $row = $result->fetch_assoc()) {
+            $user_id = $row['id'];
+            // 必要に応じてユーザー情報更新
+            $update = $conn->prepare("UPDATE ai_users SET note_username=? WHERE id=?");
+            $update->bind_param("si", $note_username, $user_id);
+            $update->execute();
+        } else {
+            $insert = $conn->prepare("INSERT INTO ai_users (note_userId, note_username, avatar_url) VALUES (?, ?, ?)");
+            $insert->bind_param("sss", $note_userId, $note_username, $avatar_url);
+            $insert->execute();
+            $user_id = $conn->insert_id;
+        }
+    }
+
+    return [
+        'title'         => $title,
+        'note_username' => $note_username,
+        'summary'       => $summary,
+        'thumbnail_url' => $thumbnail_url,
+        'avatar_url'    => $avatar_url,
+        'user_id'       => $user_id,
+        'note_userId'   => $note_userId,
+        'article_id'    => $article_id
+    ];
 }
+
 /**
 * カテゴリごとの試行結果数を取得
 */

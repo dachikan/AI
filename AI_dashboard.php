@@ -28,13 +28,12 @@ include 'includes/header.php';
     <div class="container">
         <h1 class="display-4 mb-3"><i class="fas fa-robot"></i> AI サービス総合ポータル</h1>
         <p class="lead mb-4"><?= $totalServices ?>種類のAIサービスを比較・検索・ランキングで探そう</p>
-        
         <!-- 検索フォーム -->
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <form action="AI_search.php" method="GET" class="d-flex gap-2">
                     <input type="text" class="form-control form-control-lg" name="q" 
-                           placeholder="ChatGPT、DALL-E、Midjourney...">
+                        placeholder="ChatGPT、DALL-E、Midjourney...">
                     <button type="submit" class="btn btn-light btn-lg">
                         <i class="fas fa-search"></i> 検索
                     </button>
@@ -126,6 +125,43 @@ include 'includes/header.php';
                         </a>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- 右カラム：リンク -->
+        <div class="col-md-6">
+            <h3 class="mb-4"><i class="fas fa-fire"></i> 参考リンク</h3>
+            <div class="list-group">
+                <a href="https://glbgpt.com/ja/home" class="list-group-item list-group-item-action" target="_blank">
+                    <i class="fas fa-newspaper"></i> 100以上の強力なAIモデルを一か所で利用 
+                </a>
+                <a href="https://www.youtube.com/watch?v=A6Dx8xXUcaA" class="list-group-item list-group-item-action" target="_blank">
+                    <i class="fas fa-book"></i> AIエージェント・MCPサーバも解説
+                </a>
+                <a href="https://www.aistartups.co/" class="list-group-item list-group-item-action" target="_blank">
+                    <i class="fas fa-rocket"></i> 世界のAIスタートアップ・サービスまとめ
+                </a>
+                <a href="https://www.futurepedia.io/" class="list-group-item list-group-item-action" target="_blank">
+                    <i class="fas fa-brain"></i> AIツール・サービスの最新データベース Futurepedia
+                </a>
+                <a href="https://www.deepL.com/ja/translator" class="list-group-item list-group-item-action" target="_blank">
+                    <i class="fas fa-language"></i> DeepL翻訳（高精度AI翻訳サービス）
+                </a>
+                <a href="https://www.notion.so/product/ai" class="list-group-item list-group-item-action" target="_blank">
+                    <i class="fas fa-lightbulb"></i> Notion AI（AI搭載ノート・ドキュメント）
+                </a>
+                <a href="https://zenn.dev/topics/ai" class="list-group-item list-group-item-action" target="_blank">
+                    <i class="fas fa-book"></i> Zenn「AI」タグ（日本語のAI技術記事）
+                </a>
+                <a href="https://huggingface.co/models" class="list-group-item list-group-item-action" target="_blank">
+                    <i class="fas fa-database"></i> Hugging Face（AIモデル・データセット集）
+                </a>
+                <a href="https://www.youtube.com/shorts/A2CSyhBLcMY" class="list-group-item list-group-item-action" target="_blank">
+                    <i class="fas fa-database"></i> ホリエモンＡＩ学校
+                </a>
+                <a href="https://www.youtube.com/shorts/Oss0i8EAOqY" class="list-group-item list-group-item-action" target="_blank">
+                    <i class="fas fa-database"></i> プログラミング入門
+                </a>
             </div>
         </div>
 

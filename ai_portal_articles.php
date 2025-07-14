@@ -366,6 +366,10 @@ include 'includes/header.php';
                         onclick="changeSort('published')">
                     <i class="fas fa-calendar"></i> 公開順
                 </button>
+                <!-- Button trigger modal -->
+                <button type="button" class="sort-tab" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                    <i class="fas fa-table"></i> 新しいサイト
+                </button>
             </div>
 
             <!-- フィルター -->
@@ -593,5 +597,41 @@ function viewArticle(noteUrl, articleId) {
     window.open(noteUrl, '_blank');
 }
 </script>
-
 <?php include 'includes/footer.php'; ?>
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+        <div class="container py-5">
+            <div class="form-container shadow-sm">
+                <h1 class="text-center mb-4">note記事から取得</h1>
+                
+                <form action="note_article_info.php" method="POST">
+                    <div class="mb-3">
+                        <label for="article_url" class="form-label">Note記事URL</label>
+                        <input type="url" class="form-control" id="article_url" name="url"
+                            placeholder="https://note.com/ユーザid/n/記事id/"
+                            required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="ai_service_id" class="form-label">AIサービスを選択</label>
+                        <select class="form-select" id="ai_service_id" name="ai_service_id" required>
+                            <?php
+                                $ai_services = getAIServices();
+                                foreach ($ai_services as $service): 
+                            ?>
+                                <option value="<?= $service['id'] ?>"><?= htmlspecialchars($service['ai_service']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">記事情報を取得して保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+  </div>
+</div>

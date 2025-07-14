@@ -140,6 +140,19 @@ if ($isAdmin && isset($_POST['update_verification'])) {
     $message = "記事の確認状態を更新しました。";
 }
 
+// 記事タイプ更新処理
+if ($isAdmin && isset($_POST['update_article_type'])) {
+    $articleId = intval($_POST['article_id']);
+    $articleType = $_POST['article_type'] ?? '';
+    if ($articleId > 0 && $articleType !== '') {
+        $updateStmt = $conn->prepare("UPDATE ai_articles SET article_type = ? WHERE id = ?");
+        $updateStmt->bind_param("si", $articleType, $articleId);
+        $updateStmt->execute();
+        $updateStmt->close();
+        $message = "記事ID {$articleId} の記事タイプを更新しました。";
+    }
+}
+
 // 通常のHTML処理はここから続く
 $pageTitle = '記事管理 - AI活用体験ポータル';
 include 'includes/header.php';
@@ -205,6 +218,9 @@ include 'includes/header.php';
             <span class="badge bg-success">管理者モード</span>
             <small class="text-muted">ログイン時刻: <?= date('Y/m/d H:i', $_SESSION['admin_login_time']) ?></small>
         </div>
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#exampleModal">
+            <i class="fas fa-table"></i> 新しいサイト
+        </button>
         <a href="?logout=1" class="btn btn-outline-secondary">
             <i class="fas fa-sign-out-alt"></i> ログアウト
         </a>
@@ -215,217 +231,309 @@ include 'includes/header.php';
     <?php endif; ?>
     
     <?php
-    // 管理対象の記事を取得
-    $adminSql = "SELECT 
-        a.id, a.title, a.url, a.status, a.is_verified, a.created_at,
-        a.thumbnail_url, a.admin_notes, a.summary,
-        ai.ai_service,
-        c.name as category_name,
-        au.note_username, au.avatar_url
-    FROM ai_articles a
-    JOIN AIInfo ai ON a.ai_service_id = ai.id
-    LEFT JOIN ai_users au ON a.user_id = au.id
-    LEFT JOIN AIPromptCategories c ON a.category_id = c.id
-    WHERE a.status = 'verified'
-    ORDER BY a.is_verified ASC, a.created_at DESC
-    LIMIT 50";
-    
-    $adminArticles = $conn->query($adminSql)->fetch_all(MYSQLI_ASSOC);
-    ?>
-    
-    <div class="row">
-        <?php foreach ($adminArticles as $article): ?>
-        <div class="col-md-6 mb-4">
-            <div class="card <?= $article['is_verified'] ? 'border-success' : 'border-warning' ?>">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <small class="text-muted">ID: <?= $article['id'] ?></small>
-                    <?php if ($article['is_verified']): ?>
-                    <span class="badge bg-success">確認済み</span>
-                    <?php else: ?>
-                    <span class="badge bg-warning">未確認</span>
-                    <?php endif; ?>
-                </div>
-                <div class="card-body">
-                    <h6 class="card-title">
-                        <?= htmlspecialchars($article['title'] ?: '無題') ?>
-                        <?php if (!empty($article['avatar_url'])): ?>
-                            <img src="<?= htmlspecialchars($article['avatar_url']) ?>" alt="avatar" style="width: 40px; height: 40px; border-radius: 50%;">
-                        <?php else: ?>
-                            <span style="color: #ccc;">(avatarなし)</span>
-                        <?php endif; ?>
-                    </h6>
-<!-- 画像表示部分 -->
-<div class="thumbnail-wrapper">
-    <?php if (!empty($article['thumbnail_url'])): ?>
-        <img src="<?= htmlspecialchars($article['thumbnail_url']) ?>" 
-             alt="thumbnail" 
-             style="width: 100px; object-fit: cover;"
-             id="thumbnail_img_<?= $article['id'] ?>"
-             onerror="handleImageError(<?= $article['id'] ?>)">
-    <?php else: ?>
-        <span style="color: #ccc;" id="thumbnail_placeholder_<?= $article['id'] ?>">
-            (thumbnailなし)
-        </span>
-        <img src="" alt="thumbnail" 
-             style="width: 100px; object-fit: cover; display:none;"
-             id="thumbnail_img_<?= $article['id'] ?>">
+        // 管理対象の記事を取得
+        $adminSql = "SELECT 
+            a.id AS article_id, a.title, a.url, a.status, a.is_verified, a.created_at,
+            a.thumbnail_url, a.admin_notes, a.summary,
+            a.article_type,
+            c.name as category_name,
+            au.note_username, au.avatar_url
+        FROM ai_articles a
+        JOIN AIInfo ai ON a.ai_service_id = ai.id
+        LEFT JOIN ai_users au ON a.user_id = au.id
+        LEFT JOIN AIPromptCategories c ON a.category_id = c.id
+        ORDER BY a.is_verified ASC, a.created_at DESC
+        LIMIT 50";
+        
+        $adminArticles = $conn->query($adminSql)->fetch_all(MYSQLI_ASSOC);
+
+        //foreach ($adminArticles as $article):
+            // 削除処理
+            if ($isAdmin && isset($_POST['delete_article'])) {
+                $articleId = intval($_POST['article_id']);
+                if ($articleId > 0) {
+                    $delStmt = $conn->prepare("DELETE FROM ai_articles WHERE id = ?");
+                    $delStmt->bind_param("i", $articleId);
+                    $delStmt->execute();
+                    $delStmt->close();
+                    $message = "記事ID {$articleId} を削除しました。";
+                }
+            }
+            // 記事タイプ更新処理
+            if ($isAdmin && isset($_POST['update_article_type'])) {
+                $articleId = intval($_POST['article_id']);
+                $articleType = $_POST['article_type'] ?? '';
+                if ($articleId > 0 && $articleType !== '') {
+                    $updateStmt = $conn->prepare("UPDATE ai_articles SET article_type = ? WHERE id = ?");
+                    $updateStmt->bind_param("si", $articleType, $articleId);
+                    $updateStmt->execute();
+                    $updateStmt->close();
+                    $message = "記事ID {$articleId} の記事タイプを更新しました。";
+                }
+            }
+        //endforeach;
+        ?>
     <?php endif; ?>
 </div>
 
-<!-- 画像再取得ボタン -->
-<form method="POST" class="d-inline" id="refreshForm_<?= $article['id'] ?>">
-    <input type="hidden" name="article_id" value="<?= $article['id'] ?>">
-    <input type="hidden" name="aurl" value="<?= htmlspecialchars($article['url']) ?>">
-    <button type="submit" name="refresh_thumbnail" class="btn btn-sm btn-outline-secondary">
-        <i class="fas fa-sync-alt"></i> 画像再取得
-    </button>
-</form>
-                    <p class="card-text">
-                        <small class="text-muted">
-                            <i class="fas fa-robot"></i> <?= htmlspecialchars($article['ai_service']) ?>
-                            <?php if ($article['category_name']): ?>
-                            | <i class="fas fa-tag"></i> <?= htmlspecialchars($article['category_name']) ?>
-                            <?php endif; ?>
-                            <br>
-                            <i class="fas fa-calendar"></i> <?= date('Y/m/d H:i', strtotime($article['created_at'])) ?>
-                            <?php if ($article['note_username']): ?>
-                            | <i class="fas fa-user"></i> <?= htmlspecialchars($article['note_username']) ?>
-                            <?php endif; ?>
-                        </small>
-                    </p>
-                    
-                    <?php if ($article['summary']): ?>
-                    <p class="card-text">
-                        <?= htmlspecialchars(mb_substr($article['summary'], 0, 100)) ?>
-                        <?php if (mb_strlen($article['summary']) > 100): ?>...<?php endif; ?>
-                    </p>
-                    <?php endif; ?>
 
+<style>
+    .card-ai-article {
+    border: 2px solid #ffd966;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    margin-bottom: 24px;
+    min-height: 480px;
+    }
+    .card-ai-article .thumbnail-wrapper {
+    text-align: center;
+    margin-bottom: 8px;
+    }
+    .card-ai-article .thumbnail-wrapper img {
+    width: 100%;
+    max-width: 360px;
+    height: 200px;
+    object-fit: cover;
+    object-position: center top;
+    border-radius: 8px;
+    background: #eee;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    }
+    .card-ai-article .card-title {
+    font-weight: bold;
+    font-size: 1.1em;
+    }
+    .card-ai-article textarea {
+    min-height: 42px;
+    }
+    .card-ai-article .btn-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+    }
+    .card-ai-article .btn-row .btn {
+    min-width: 90px;
+    }
+    .card-ai-article .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 0;
+    }
+    @media (max-width: 768px) {
+    .card-ai-article .thumbnail-wrapper img {
+        max-width: 100%;
+        height: 160px;
+    }
+    }
+</style>
+
+<div class="row">
+<?php foreach ($adminArticles as $article): ?>
+
+  <div class="col-md-6">
+    <div class="card card-ai-article p-3 mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span><b>ID:</b> <?= $article['article_id'] ?></span>
+        <?php if (!$article['is_verified']): ?>
+          <span class="badge bg-warning text-dark">未確認</span>
+        <?php else: ?>
+          <span class="badge bg-success">確認済み</span>
+        <?php endif; ?>
+      </div>
+      <div class="card-title mb-2"><?= htmlspecialchars($article['title'] ?: '無題') ?></div>
+      <div class="thumbnail-wrapper mb-2">
+        <?php if (!empty($article['thumbnail_url'])): ?>
+            <a href="<?= htmlspecialchars($article['url']) ?>" class="btn btn-outline-primary btn-sm" target="_blank">
+                <img src="<?= htmlspecialchars($article['thumbnail_url']) ?>" alt="thumbnail">
+            </a>
+        <?php endif; ?>
+        <?php if (!empty($article['avatar_url'])): ?>
+          <img src="<?= htmlspecialchars($article['avatar_url']) ?>" alt="avatar" style="width:36px;height:36px;border-radius:50%;vertical-align:middle;">
+        <?php else: ?>
+          <span style="color:#ccc;">(avatarなし)</span>
+        <?php endif; ?>
+        <span class="ms-2"><?= htmlspecialchars($article['note_username']) ?></span>
+      </div>
+      <div class="mb-2 text-muted" style="font-size:0.95em;">
+        <i class="fas fa-calendar"></i> <?= date('Y/m/d H:i', strtotime($article['created_at'])) ?>
+        <?php if ($article['category_name']): ?>
+          | <i class="fas fa-tag"></i> <?= htmlspecialchars($article['category_name']) ?>
+        <?php endif; ?>
+      </div>
+      <div class="mb-2">
+        <?= htmlspecialchars(mb_substr($article['summary'], 0, 160)) ?>
+        <?php if (mb_strlen($article['summary']) > 160): ?>...<?php endif; ?>
+      </div>
+      
+      <form method="POST" class="mb-2 d-flex align-items-center gap-2">
+        <label class="form-label me-2 mb-0">記事タイプ</label>
+        <select name="article_type" class="form-select form-select-sm w-auto me-2">
+          <option value="">未設定</option>
+          <option value="programming" <?= $article['article_type'] === 'programming' ? 'selected' : '' ?>>プログラミング</option>
+          <option value="shop" <?= $article['article_type'] === 'shop' ? 'selected' : '' ?>>ショップ運営</option>
+          <option value="economy" <?= $article['article_type'] === 'economy' ? 'selected' : '' ?>>経済情報</option>
+          <option value="technical" <?= $article['article_type'] === 'technical' ? 'selected' : '' ?>>技術知識</option>
+          <option value="scenario" <?= $article['article_type'] === 'scenario' ? 'selected' : '' ?>>シナリオ作り</option>
+          <option value="writing" <?= $article['article_type'] === 'writing' ? 'selected' : '' ?>>執筆</option>
+          <option value="profit" <?= $article['article_type'] === 'profit' ? 'selected' : '' ?>>収益化</option>
+          <option value="drawing" <?= $article['article_type'] === 'drawing' ? 'selected' : '' ?>>作画・イラスト</option>
+          <option value="office" <?= $article['article_type'] === 'office' ? 'selected' : '' ?>>オフィス</option>
+          <option value="agriculture" <?= $article['article_type'] === 'agriculture' ? 'selected' : '' ?>>農業</option>
+          <option value="warry" <?= $article['article_type'] === 'warry' ? 'selected' : '' ?>>悩み相談</option>
+          <option value="unknown" <?= $article['article_type'] === 'unknown' ? 'selected' : '' ?>>不明</option>
+        </select>
+        <input type="hidden" name="article_id" value="<?= $article['article_id'] ?>">
+        <button type="submit" name="update_article_type" class="btn btn-sm btn-secondary">記事タイプを変更する</button>
+      </form>
+      <div class="btn-row mb-2">
+        <form method="POST" class="mb-0 d-inline">
+          <input type="hidden" name="article_id" value="<?= $article['article_id'] ?>">
+          <label class="checkbox-label">
+            <input type="checkbox" name="is_verified" value="1" <?= $article['is_verified'] ? 'checked' : '' ?> onchange="this.form.submit()" title="確認状態">
+            <span style="font-size:0.97em;">確認</span>
+          </label>
+        </form>
+        <form method="POST" class="mb-0 d-inline">
+          <input type="hidden" name="article_id" value="<?= $article['article_id'] ?>">
+          <input type="hidden" name="admin_notes" value="<?= htmlspecialchars($article['admin_notes'] ?? '') ?>">
+          <button type="submit" name="update_verification" class="btn btn-primary btn-sm">更新</button>
+        </form>
+        <form method="POST" class="mb-0 d-inline" onsubmit="return confirm('本当にこの記事を削除しますか？');">
+          <input type="hidden" name="article_id" value="<?= $article['article_id'] ?>">
+          <button type="submit" name="delete_article" class="btn btn-danger btn-sm">削除</button>
+        </form>
+      </div>
+      <form method="POST" class="mt-2">
+        <input type="hidden" name="article_id" value="<?= $article['article_id'] ?>">
+        <label class="form-label mb-1" style="font-size:0.96em;">管理者メモ</label>
+        <textarea name="admin_notes" class="form-control form-control-sm" rows="2"><?= htmlspecialchars($article['admin_notes']) ?></textarea>
+        <button type="submit" name="update_verification" class="btn btn-outline-success btn-sm mt-1">メモ保存</button>
+      </form>
+    </div>
+  </div>
+    <?php endforeach; ?>
+</div>
+<?php include 'includes/footer.php'; ?>
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+        <div class="container py-5">
+            <div class="form-container shadow-sm">
+                <h1 class="text-center mb-4">note記事から取得</h1>
+                <form action="note_article_info.php" method="POST">
                     <div class="mb-3">
-                        <a href="<?= htmlspecialchars($article['url']) ?>" 
-                            target="_blank" 
-                            class="btn btn-sm btn-outline-primary">
-                            <i class="fas fa-external-link-alt"></i> note記事を確認
-                        </a>
+                        <label for="article_url" class="form-label">Note記事URL</label>
+                        <input type="url" class="form-control" id="article_url" name="url"
+                            placeholder="https://note.com/ユーザid/n/記事id/"
+                            required>
                     </div>
-
-                    <!-- 確認状態更新フォーム -->
-                    <form method="POST" class="border-top pt-3">
-                        <input type="hidden" name="article_id" value="<?= $article['id'] ?>">
-                        <div class="mb-2">
-                            <label class="form-label">確認状態</label>
-                            <select name="is_verified" class="form-select form-select-sm">
-                                <option value="0" <?= !$article['is_verified'] ? 'selected' : '' ?>>未確認</option>
-                                <option value="1" <?= $article['is_verified'] ? 'selected' : '' ?>>確認済み</option>
-                            </select>
-                        </div>
-                        <div class="mb-2">
-                            <label class="form-label">管理者メモ</label>
-                            <textarea name="admin_notes" class="form-control form-control-sm" rows="2" 
-                                      placeholder="内部メモ（非公開）"><?= htmlspecialchars($article['admin_notes'] ?? '') ?></textarea>
-                        </div>
-                        <button type="submit" name="update_verification" class="btn btn-sm btn-primary">
-                            <i class="fas fa-save"></i> 更新
-                        </button>
-                    </form>
-
-                </div>
+                    <div class="mb-3">
+                        <label for="ai_service_id" class="form-label">AIサービスを選択</label>
+                        <select class="form-select" id="ai_service_id" name="ai_service_id" required>
+                            <?php
+                                $ai_services = getAIServices();
+                                foreach ($ai_services as $service): 
+                            ?>
+                                <option value="<?= $service['id'] ?>"><?= htmlspecialchars($service['ai_service']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">記事情報を取得して保存</button>
+                    </div>
+                </form>
             </div>
         </div>
-        <?php endforeach; ?>
     </div>
-    
-    <?php if (empty($adminArticles)): ?>
-    <div class="text-center py-5">
-        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-        <h4>管理対象の記事がありません</h4>
-    </div>
-    <?php endif; ?>
-    
-    <?php endif; ?>
+  </div>
 </div>
+<?php ob_end_flush(); // ファイルの最後でバッファを出力 ?>
 <script>
-document.querySelectorAll('[id^="refreshForm_"]').forEach(form => {
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
+    document.querySelectorAll('[id^="refreshForm_"]').forEach(form => {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const button = this.querySelector('button');
+            const articleId = this.id.split('_')[1];
+            const imgElement = document.getElementById(`thumbnail_img_${articleId}`);
+            const placeholder = document.getElementById(`thumbnail_placeholder_${articleId}`);
+            
+            // ローディング状態
+            button.disabled = true;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 処理中...';
+            
+            try {
+                const response = await fetch('admin_articles.php', {
+                    method: 'POST',
+                    body: new FormData(this),
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                // 生のレスポンスを取得してデバッグ
+                const rawResponse = await response.text();
+                console.log('Raw Response:', rawResponse);
+                
+                // JSONとしてパースを試みる
+                let data;
+                try {
+                    data = JSON.parse(rawResponse);
+                } catch (e) {
+                    throw new Error(`JSON解析エラー: ${e.message}\nレスポンス: ${rawResponse.substring(0, 100)}...`);
+                }
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'リクエストに失敗しました');
+                }
+                
+                // 画像更新処理
+                if (data.thumbnail_url) {
+                    const img = imgElement || createImageElement(articleId, placeholder);
+                    img.src = data.thumbnail_url + '?t=' + new Date().getTime(); // キャッシュ回避
+                    img.style.display = 'block';
+                    if (placeholder) placeholder.style.display = 'none';
+                    
+                    // 成功メッセージ
+                    alert('サムネイルURLが更新されました: ' + data.thumbnail_url);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('エラーが発生しました: ' + error.message);
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        });
+    });
+
+    function createImageElement(articleId, placeholder) {
+        const img = document.createElement('img');
+        img.id = `thumbnail_img_${articleId}`;
+        img.alt = 'thumbnail';
+        img.style = 'width: 100px; object-fit: cover;';
+        img.onerror = () => handleImageError(articleId);
         
-        const button = this.querySelector('button');
-        const articleId = this.id.split('_')[1];
-        const imgElement = document.getElementById(`thumbnail_img_${articleId}`);
+        if (placeholder) {
+            placeholder.insertAdjacentElement('beforebegin', img);
+        }
+        
+        return img;
+    }
+
+    function handleImageError(articleId) {
+        const img = document.getElementById(`thumbnail_img_${articleId}`);
         const placeholder = document.getElementById(`thumbnail_placeholder_${articleId}`);
         
-        // ローディング状態
-        button.disabled = true;
-        const originalText = button.innerHTML;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 処理中...';
-        
-        try {
-            const response = await fetch('admin_articles.php', {
-                method: 'POST',
-                body: new FormData(this),
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json'
-                }
-            });
-            
-            // 生のレスポンスを取得してデバッグ
-            const rawResponse = await response.text();
-            console.log('Raw Response:', rawResponse);
-            
-            // JSONとしてパースを試みる
-            let data;
-            try {
-                data = JSON.parse(rawResponse);
-            } catch (e) {
-                throw new Error(`JSON解析エラー: ${e.message}\nレスポンス: ${rawResponse.substring(0, 100)}...`);
-            }
-            
-            if (!data.success) {
-                throw new Error(data.error || 'リクエストに失敗しました');
-            }
-            
-            // 画像更新処理
-            if (data.thumbnail_url) {
-                const img = imgElement || createImageElement(articleId, placeholder);
-                img.src = data.thumbnail_url + '?t=' + new Date().getTime(); // キャッシュ回避
-                img.style.display = 'block';
-                if (placeholder) placeholder.style.display = 'none';
-                
-                // 成功メッセージ
-                alert('サムネイルURLが更新されました: ' + data.thumbnail_url);
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('エラーが発生しました: ' + error.message);
-        } finally {
-            button.disabled = false;
-            button.innerHTML = originalText;
-        }
-    });
-});
-
-function createImageElement(articleId, placeholder) {
-    const img = document.createElement('img');
-    img.id = `thumbnail_img_${articleId}`;
-    img.alt = 'thumbnail';
-    img.style = 'width: 100px; object-fit: cover;';
-    img.onerror = () => handleImageError(articleId);
-    
-    if (placeholder) {
-        placeholder.insertAdjacentElement('beforebegin', img);
+        if (img) img.style.display = 'none';
+        if (placeholder) placeholder.style.display = 'inline';
     }
-    
-    return img;
-}
-
-function handleImageError(articleId) {
-    const img = document.getElementById(`thumbnail_img_${articleId}`);
-    const placeholder = document.getElementById(`thumbnail_placeholder_${articleId}`);
-    
-    if (img) img.style.display = 'none';
-    if (placeholder) placeholder.style.display = 'inline';
-}
 </script>
-<?php include 'includes/footer.php'; ?>
-<?php ob_end_flush(); // ファイルの最後でバッファを出力 ?>

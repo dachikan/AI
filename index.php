@@ -33,6 +33,7 @@ function isAllowedReferrer() {
     // 許可されたホスト名のパターンを定義
     $allowedPatterns = [
 	'nsk.org' => ['exact' => true],
+	'nsk.moo.jp' => ['exact' => true],
 	'www.nsk.org' => ['exact' => true],
 	'ai.nsk.org' => ['exact' => true],
 	'note.com' => [
@@ -548,15 +549,15 @@ try {
 			</button>
 		    </h2>
 		    <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
-			<div class="accordion-body">
-			    ChatGPT（GPT-3.5/GPT-4）<br>
-			    Google Gemini<br>
-			    Midjourney<br>
-			    Stable Diffusion<br>
-			    Leonardo.AI<br>
-			    Adobe Fireflyなど<br>
-			    主要なAIサービスに対応したプロンプトを提供しています。各サンプルページには、対応するAIサービスが明記されています。
-			</div>
+				<div class="accordion-body">
+					ChatGPT（GPT-3.5/GPT-4）<br>
+					Google Gemini<br>
+					Midjourney<br>
+					Stable Diffusion<br>
+					Leonardo.AI<br>
+					Adobe Fireflyなど<br>
+					主要なAIサービスに対応したプロンプトを提供しています。各サンプルページには、対応するAIサービスが明記されています。
+				</div>
 		    </div>
 		</div>
 		<div class="accordion-item">
@@ -566,10 +567,13 @@ try {
 			</button>
 		    </h2>
 		    <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-			<div class="accordion-body">
-			    すべてのＡＩプロンプトサンプルにアクセスできます。入力例と出力例、詳細な解説、応用のコツなど、実用的な情報がすべて閲覧可能になります。将来追加されるサンプルも含めて、すべてのコンテンツにアクセスできます。<br>
-			    ＡＩを使ってみて実体験した後で詳細な解説を読めば、理解が速くなります。
-			</div>
+				<div class="accordion-body">
+					すべてのＡＩプロンプトサンプルにアクセスできます。<br>
+					各サンプルには、実際に使用したプロンプトとその結果が掲載されています。<br>
+					入力例と出力例、詳細な解説、応用のコツなど、実用的な情報がすべて閲覧可能になります。<br>
+					将来追加されるサンプルも含めて、すべてのコンテンツにアクセスできます。<br>
+					ＡＩを使ってみて実体験した後で詳細な解説を読めば、理解が速くなります。
+				</div>
 		    </div>
 		</div>
 		<div class="accordion-item">
@@ -580,7 +584,10 @@ try {
 		    </h2>
 		    <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
 			<div class="accordion-body">
-			    はい、noteの記事「老人向けAI活用ガイド」で紹介した画像生成プロンプトも含まれています。さらに、それらを発展させたバリエーションや、異なるAIエンジンでの結果比較なども提供しています。記事で気に入ったプロンプトがあれば、このサイトでさらに多くのアイデアを見つけることができます。
+			    はい、noteの記事「老人向けAI活用ガイド」で紹介した画像生成プロンプトも含まれています。<br/>
+				さらに、それらを発展させたバリエーションや、異なるAIエンジンでの結果比較なども提供しています。<br>
+				記事で紹介したプロンプトを使って、実際にAIサービスで生成した画像の例も掲載しています。<br/>
+				記事で気に入ったプロンプトがあれば、このサイトでさらに多くのアイデアを見つけることができます。
 			</div>
 		    </div>
 		</div>
@@ -592,7 +599,14 @@ try {
 		    </h2>
 		    <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
 			<div class="accordion-body">
-			    いいえ。紹介しているAIサービス自体の利用には、各サービスの利用規約に従った別途料金が発生する場合があります。ただし、多くのAIサービスは無料プランや無料トライアルを提供しているので、まずはそれらを活用することをお勧めします。
+			    いいえ。<br>
+				紹介しているAIサービス自体の利用には、各サービスの利用規約に従った別途料金が発生する場合があります。<br>
+				ただし、多くのAIサービスは無料プランや無料トライアルを提供しているので、まずはそれらを活用することをお勧めします。<br>
+				このサイトでは、各AIサービスの利用方法や料金体系についても簡単に説明していますので、参考にしてください。<br>
+				また、各AIサービスの公式サイトで最新の情報を確認することも重要です。<br>
+				特に、AIサービスの料金体系は頻繁に変更されることがあるため、最新情報をチェックすることをお勧めします。<br>
+				なお、このサイト自体の利用は無料で、すべてのサンプルに無制限にアクセスできます。<br>
+				ただし、AIサービスの利用には各サービスの規約に従う必要がありますので、その点をご理解の上でご利用ください。<br>
 			</div>
 		    </div>
 		</div>
@@ -604,20 +618,45 @@ try {
 			</button>
 		    </h2>
 		    <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-			<div class="accordion-body">
-			    <p>各AIサービスには、それぞれ異なる利用制限や料金体系があります：</p>
-			    <ul>
-				<li><strong>Meta AI</strong>: 現在、日本からは利用できません。</li>
-				<li><strong>Midjourney</strong>: 料金プランの選択が必須です。無料トライアルはありません。</li>
-				<li><strong>Pika</strong>: 料金プランの選択が必須です。</li>
-				<li><strong>ChatGPT</strong>: 基本機能は無料で利用可能ですが、GPT-4などの高度な機能はPlus会員（月額$20）が必要です。</li>
-				<li><strong>Google Gemini</strong>: 基本機能は無料で利用可能ですが、高度な機能はGemini Advanced（月額$19.99）が必要です。</li>
-			    </ul>
-			    <p>各サンプルページでは、そのAIサービスの利用条件についても記載していますので、ご確認ください。</p>
+				<div class="accordion-body">
+					<p>各AIサービスには、それぞれ異なる利用制限や料金体系があります：</p>
+					<ul>
+					<li><strong>ChatGPT</strong>: 基本機能は無料で利用可能ですが、GPT-4などの高度な機能はPlus会員（月額$20）が必要です。</li>
+					<li><strong>Google Gemini</strong>: 基本機能は無料で利用可能ですが、高度な機能はGemini Advanced（月額$19.99）が必要です。</li>
+					<li><strong>Stable Diffusion</strong>: 無料で利用可能ですが、商用利用にはライセンスが必要です。</li>
+					<li><strong>Leonardo.AI</strong>: 無料プランと有料プランがあります。無料プランでは一部機能に制限があります。</li>
+					<li><strong>Adobe Firefly</strong>: 無料プランと有料プランがあります。無料プランでは一部機能に制限があります。</li>
+					<li><strong>Meta AI</strong>: 現在、日本からは利用できません。</li>
+					<li><strong>Midjourney</strong>: 料金プランの選択が必須です。無料トライアルはありません。</li>
+					<li><strong>Pika</strong>: 料金プランの選択が必須です。</li>
+					<li><strong>DeepSeek R1</strong>: 無料で利用可能ですが、商用利用にはライセンスが必要です。</li>
+					<li><strong>GitHub Copilot</strong>: 月額$10または年額$100の有料プランが必要です。</li>
+					<li><strong>Claude</strong>: 無料プランと有料プランがあります。無料プランでは一部機能に制限があります。</li>
+					<li><strong>DALL-E 3</strong>: 無料で利用可能ですが、商用利用にはライセンスが必要です。</li>
+					<li><strong>その他のAIサービス</strong>: 各サービスの公式サイトで最新の情報を確認してください。</li>
+					</ul>
+					<p>各サンプルページでは、そのAIサービスの利用条件についても記載していますので、ご確認ください。</p>
+				</div>
 			</div>
+		</div>
+		<div class="accordion-item">
+		    <h2 class="accordion-header">
+			<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">
+			    現時点ではどのＡＩが優れていますか？
+			</button>
+		    </h2>
+		    <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+				<div class="accordion-body">				
+					現時点では、ChatGPT（特にGPT-4）が非常に優れた性能を発揮しています。<br>
+					また、Google GeminiやMidjourneyも注目されています。<br>
+					それぞれのAIには得意分野があるため、目的に応じて使い分けることが重要です。<br>
+					このような<a target="_blank" href="https://artificialanalysis.ai/">ＡＩ分析サイトで</a>比較分析して紹介しています。<br>
+					また、各AIの最新情報や比較は、定期的に更新されるので、最新の情報をチェックすることをお勧めします。<br>
+					特に、AIの進化は非常に速いので、最新の情報を常に確認することが重要です。<br>
+					このサイトでも、各AIの特徴や得意分野を詳しく解説していますので、ぜひ参考にしてください。<br>
+				</div>
 		    </div>
 		</div>
-	    </div>
 	</section>
     </main>
 
@@ -626,13 +665,12 @@ try {
 	    <div class="row">
 		<div class="col-md-6">
 		    <h5>AI利用体験ポータル</h5>
-		    <p>６０種類以上のＡＩを体験して文章化することを助けるサイトです</p>
+		    <p>70種類以上のAIを体験して文章化することを助けるサイトです</p>
 		</div>
 		<div class="col-md-3">
 		    <h5>リンク</h5>
 		    <ul class="list-unstyled">
 			<li><a href="#" class="text-white">ホーム</a></li>
-			<li><a href="AISampleList_with_advanced.php" class="text-white">サンプル一覧</a></li>
 			<li><a href="#categories" class="text-white">カテゴリ</a></li>
 			<li><a href="#faq" class="text-white">よくある質問</a></li>
 		    </ul>
