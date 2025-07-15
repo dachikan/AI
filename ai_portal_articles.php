@@ -9,97 +9,130 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // ページネーション設定
 $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
-$limit = 80;
+$limit = 35;
 $offset = ($page - 1) * $limit;
 
-// フィルター・ソート設定
-$aiServiceId = isset($_GET['ai_service']) ? intval($_GET['ai_service']) : 0;
-$categoryId = isset($_GET['category']) ? intval($_GET['category']) : 0;
+// フィルター設定（AIの種類フィルターを削除）
+$articleType = isset($_GET['article_type']) ? trim($_GET['article_type']) : '';
 $verifiedOnly = isset($_GET['verified']) ? $_GET['verified'] === '1' : false;
-$sortBy = isset($_GET['sort']) ? $_GET['sort'] : 'created_at';
 $searchTerm = isset($_GET['search']) ? trim($_GET['search']) : '';
+$showDebug = isset($_GET['debug']) ? $_GET['debug'] === '1' : false;
 
-// 記事一覧を取得
-$sql = "SELECT 
-    a.id, a.url, a.title, a.summary, a.article_type, a.status, a.is_verified,
-    a.published_at, a.view_count, a.helpful_count, a.created_at,
-    a.thumbnail_url, -- ★追加
-    ai.ai_service, ai.id as ai_service_id,
-    c.name as category_name,
-    au.note_username,
-    au.avatar_url, -- ★追加
-    COALESCE(SUBSTRING(a.summary, 1, 120), SUBSTRING(a.title, 1, 120), 'AI活用体験記事') as preview_text
-FROM ai_articles a
-JOIN AIInfo ai ON a.ai_service_id = ai.id
-JOIN ai_users au ON a.user_id = au.id
-LEFT JOIN AIPromptCategories c ON a.category_id = c.id
-WHERE a.status = 'verified'";
+// デバッグ情報
+$debugInfo = '';
+if ($showDebug) {
+    $debugInfo .= "<div style='background: #f0f0f0; padding: 10px; margin: 10px; border: 1px solid #ccc;'>";
+    $debugInfo .= "<h4>🐛 デバッグ情報</h4>";
+    $debugInfo .= "articleType: '" . htmlspecialchars($articleType) . "'<br>";
+    $debugInfo .= "page: " . $page . ", limit: " . $limit . ", offset: " . $offset . "<br>";
 
+    // 基本的なテスト
+    $basicTest = "SELECT COUNT(*) as count FROM ai_articles WHERE status = 'verified'";
+    $basicResult = $conn->query($basicTest);
+    if ($basicResult) {
+        $basicCount = $basicResult->fetch_assoc()['count'];
+        $debugInfo .= "基本的な verified 記事数: " . $basicCount . "件<br>";
+    }
+
+    // 記事タイプ別の件数
+    if (!empty($articleType)) {
+        $typeTest = "SELECT COUNT(*) as count FROM ai_articles WHERE status = 'verified' AND article_type = ?";
+        $typeStmt = $conn->prepare($typeTest);
+        $typeStmt->bind_param('s', $articleType);
+        $typeStmt->execute();
+        $typeCount = $typeStmt->get_result()->fetch_assoc()['count'];
+        $debugInfo .= "記事タイプ '{$articleType}' の件数: " . $typeCount . "件<br>";
+    }
+
+    $debugInfo .= "</div>";
+}
+
+// WHERE条件の構築（AIの種類フィルターを削除）
+$whereConditions = [];
 $params = [];
 $types = '';
 
 // 確認済みフィルター
 if ($verifiedOnly) {
-    $sql .= " AND a.is_verified = 1";
+    $whereConditions[] = "a.is_verified = 1";
 }
 
-// AIサービスフィルター
-if ($aiServiceId > 0) {
-    $sql .= " AND a.ai_service_id = ?";
-    $params[] = $aiServiceId;
-    $types .= 'i';
-}
-
-// カテゴリフィルター
-if ($categoryId > 0) {
-    $sql .= " AND a.category_id = ?";
-    $params[] = $categoryId;
-    $types .= 'i';
+// 記事タイプフィルター（記事の種類）
+if (!empty($articleType)) {
+    $whereConditions[] = "a.article_type = ?";
+    $params[] = $articleType;
+    $types .= 's';
 }
 
 // 検索フィルター
 if (!empty($searchTerm)) {
-    $sql .= " AND (a.title LIKE ? OR a.summary LIKE ?)";
+    $whereConditions[] = "(a.title LIKE ? OR a.summary LIKE ?)";
     $searchPattern = '%' . $searchTerm . '%';
     $params[] = $searchPattern;
     $params[] = $searchPattern;
     $types .= 'ss';
 }
 
-// ソート
-switch ($sortBy) {
-    case 'views':
-        $sql .= " ORDER BY a.view_count DESC, a.created_at DESC";
-        break;
-    case 'helpful':
-        $sql .= " ORDER BY a.helpful_count DESC, a.created_at DESC";
-        break;
-    case 'verified':
-        $sql .= " ORDER BY a.is_verified DESC, a.created_at DESC";
-        break;
-    case 'published':
-        $sql .= " ORDER BY a.published_at DESC, a.created_at DESC";
-        break;
-    default: // 'created_at'
-        $sql .= " ORDER BY a.created_at DESC";
+// メインクエリ - ORDER BYを削除（表示優先）
+$sql = "SELECT 
+    a.id, a.url, a.title, a.summary, a.article_type, a.status, a.is_verified,
+    a.published_at, a.view_count, a.helpful_count, a.created_at,
+    a.thumbnail_url,
+    ai.ai_service, ai.id as ai_service_id,
+    c.name as category_name,
+    COALESCE(au.note_username, 'Unknown User') as note_username,
+    au.avatar_url,
+    COALESCE(SUBSTRING(a.summary, 1, 120), SUBSTRING(a.title, 1, 120), 'AI活用体験記事') as preview_text
+FROM ai_articles a
+JOIN AIInfo ai ON a.ai_service_id = ai.id
+LEFT JOIN ai_users au ON a.user_id = au.id
+LEFT JOIN AIPromptCategories c ON a.category_id = c.id
+WHERE a.status = 'verified'";
+
+// WHERE条件を追加
+if (!empty($whereConditions)) {
+    $sql .= " AND " . implode(" AND ", $whereConditions);
 }
 
+// ORDER BYを削除し、LIMIT/OFFSETのみ
 $sql .= " LIMIT ? OFFSET ?";
-$params[] = $limit;
-$params[] = $offset;
-$types .= 'ii';
+
+$mainParams = $params;
+$mainParams[] = $limit;
+$mainParams[] = $offset;
+$mainTypes = $types . 'ii';
+
+if ($showDebug) {
+    $debugInfo .= "<div style='background: #e8f4f8; padding: 10px; margin: 10px; border: 1px solid #bee5eb;'>";
+    $debugInfo .= "<h5>実行SQL:</h5>";
+    $debugInfo .= "<pre>" . htmlspecialchars($sql) . "</pre>";
+    $debugInfo .= "パラメータ: " . print_r($mainParams, true) . "<br>";
+    $debugInfo .= "</div>";
+}
 
 $stmt = $conn->prepare($sql);
-if (!empty($params)) {
-    $stmt->bind_param($types, ...$params);
+if ($stmt === false) {
+    die('Prepare failed: ' . $conn->error);
 }
-$stmt->execute();
-$articles = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 
-// 総記事数を取得
+if (!empty($mainParams)) {
+    if (!$stmt->bind_param($mainTypes, ...$mainParams)) {
+        die('Bind param failed: ' . $stmt->error);
+    }
+}
+
+if (!$stmt->execute()) {
+    die('Execute failed: ' . $stmt->error);
+}
+
+$result = $stmt->get_result();
+$articles = $result->fetch_all(MYSQLI_ASSOC);
+
+// 総記事数を取得（AIの種類フィルターを削除）
 $countSql = "SELECT COUNT(*) as total FROM ai_articles a 
-             JOIN AIInfo ai ON a.ai_service_id = ai.id 
+             JOIN AIInfo ai ON a.ai_service_id = ai.id
              WHERE a.status = 'verified'";
+
 $countParams = [];
 $countTypes = '';
 
@@ -107,16 +140,10 @@ if ($verifiedOnly) {
     $countSql .= " AND a.is_verified = 1";
 }
 
-if ($aiServiceId > 0) {
-    $countSql .= " AND a.ai_service_id = ?";
-    $countParams[] = $aiServiceId;
-    $countTypes .= 'i';
-}
-
-if ($categoryId > 0) {
-    $countSql .= " AND a.category_id = ?";
-    $countParams[] = $categoryId;
-    $countTypes .= 'i';
+if (!empty($articleType)) {
+    $countSql .= " AND a.article_type = ?";
+    $countParams[] = $articleType;
+    $countTypes .= 's';
 }
 
 if (!empty($searchTerm)) {
@@ -132,16 +159,11 @@ if (!empty($countParams)) {
     $countStmt->execute();
     $totalArticles = $countStmt->get_result()->fetch_assoc()['total'];
 } else {
-    $totalArticles = $conn->query($countSql)->fetch_assoc()['total'];
+    $result = $conn->query($countSql);
+    $totalArticles = $result->fetch_assoc()['total'];
 }
 
 $totalPages = ceil($totalArticles / $limit);
-
-// AIサービス一覧（フィルター用）
-$aiServices = getAIServices();
-
-// カテゴリ一覧
-$categories = getPromptCategories();
 
 // ページネーション用のURL生成関数
 function buildPaginationUrl($targetPage, $currentParams) {
@@ -150,13 +172,12 @@ function buildPaginationUrl($targetPage, $currentParams) {
     return '?' . http_build_query($params);
 }
 
-// 現在のフィルター・ソートパラメータを保持
+// 現在のフィルター・ソートパラメータを保持（categoryを削除）
 $currentParams = [];
-if ($aiServiceId > 0) $currentParams['ai_service'] = $aiServiceId;
-if ($categoryId > 0) $currentParams['category'] = $categoryId;
+if (!empty($articleType)) $currentParams['article_type'] = $articleType;
 if ($verifiedOnly) $currentParams['verified'] = '1';
-if ($sortBy !== 'created_at') $currentParams['sort'] = $sortBy;
 if (!empty($searchTerm)) $currentParams['search'] = $searchTerm;
+if ($showDebug) $currentParams['debug'] = '1';
 
 include 'includes/header.php';
 ?>
@@ -254,7 +275,7 @@ include 'includes/header.php';
         width: 24px;
         height: 24px;
         border-radius: 50%;
-        margin-right: 160px;
+        margin-right: 8px;
         object-fit: cover;
         background-color: #ddd; /* アバターがない場合の背景色 */
     }
@@ -317,15 +338,222 @@ include 'includes/header.php';
         font-size: 0.9rem;
     }
     .card-summary {
-    font-size: 0.8rem;
-    color: #666;
-    margin: 0 0 8px 0;
-    display: -webkit-box;
-    -webkit-line-clamp: 2; /* 2行までに制限 */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    line-height: 1.4;
-}
+        font-size: 0.8rem;
+        color: #666;
+        margin: 0 0 8px 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 2; /* 2行までに制限 */
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        line-height: 1.4;
+    }
+
+    /* ポータルヘッダーにデバッグボタンを追加 */
+    .portal-header {
+        position: relative;
+    }
+
+    .debug-toggle {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 8px 12px;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        font-size: 0.9rem;
+        text-decoration: none;
+    }
+
+    .debug-toggle:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        text-decoration: none;
+    }
+
+    .debug-toggle.active {
+        background: rgba(255, 255, 255, 0.9);
+        color: #333;
+    }
+
+    /* メインフィルターのスタイル調整 */
+    .main-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 20px;
+        align-items: flex-end;
+    }
+
+    .article-type-filter {
+        display: flex;
+        flex-direction: column;
+        min-width: 200px;
+    }
+
+    .article-type-filter label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: #495057;
+    }
+
+    .article-type-filter select {
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        background-color: white;
+        font-size: 0.9rem;
+        transition: border-color 0.2s ease-in-out;
+    }
+
+    .article-type-filter select:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .search-form {
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+        flex: 1;
+        min-width: 300px;
+    }
+
+    .search-input-group {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .search-input-group label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: #495057;
+        display: block;
+    }
+
+    .search-input-group input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        transition: border-color 0.2s ease-in-out;
+    }
+
+    .search-input-group input:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+    .action-btn {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        text-decoration: none;
+        color: #495057;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    .action-btn:hover {
+        background: #e9ecef;
+        border-color: #adb5bd;
+        color: #495057;
+        text-decoration: none;
+    }
+
+    .action-btn.primary {
+        background: #007bff;
+        border-color: #007bff;
+        color: white;
+    }
+
+    .action-btn.primary:hover {
+        background: #0056b3;
+        border-color: #0056b3;
+        color: white;
+    }
+
+    .search-btn {
+        background: #007bff;
+        border: 1px solid #007bff;
+        color: white;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    .search-btn:hover {
+        background: #0056b3;
+        border-color: #0056b3;
+    }
+
+    /* レスポンシブ対応 */
+    @media (max-width: 768px) {
+        .main-filters {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .article-type-filter {
+            min-width: 100%;
+        }
+        
+        .action-buttons {
+            justify-content: center;
+        }
+        
+        .search-form {
+            min-width: 100%;
+        }
+        
+        .search-input-group {
+            min-width: 100%;
+        }
+
+        .debug-toggle {
+            position: static;
+            margin: 10px auto;
+            display: block;
+            width: fit-content;
+        }
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        color: #dee2e6;
+    }
+
+    .empty-state h3 {
+        margin-bottom: 15px;
+        color: #495057;
+    }
 </style>
 
 <div class="portal-container">
@@ -339,88 +567,71 @@ include 'includes/header.php';
                 実際にAIを使った体験談と活用事例を発見・共有するプラットフォーム
             </p>
         </div>
+        <!-- デバッグボタン -->
+        <a href="?<?= http_build_query(array_merge($currentParams, ['debug' => $showDebug ? '0' : '1'])) ?>" 
+           class="debug-toggle <?= $showDebug ? 'active' : '' ?>">
+            🐛 デバッグ
+        </a>
     </div>
 
     <div class="container pb-5">
-        <!-- フィルター・検索セクション -->
-        <div class="filter-section">
-            <!-- ソートタブ -->
-            <div class="sort-tabs">
-                <button class="sort-tab <?= $sortBy === 'created_at' ? 'active' : '' ?>" 
-                        onclick="changeSort('created_at')">
-                    <i class="fas fa-clock"></i> 新着順
-                </button>
-                <button class="sort-tab <?= $sortBy === 'verified' ? 'active' : '' ?>" 
-                        onclick="changeSort('verified')">
-                    <i class="fas fa-check-circle"></i> 確認済み
-                </button>
-                <button class="sort-tab <?= $sortBy === 'views' ? 'active' : '' ?>" 
-                        onclick="changeSort('views')">
-                    <i class="fas fa-eye"></i> 閲覧順
-                </button>
-                <button class="sort-tab <?= $sortBy === 'helpful' ? 'active' : '' ?>" 
-                        onclick="changeSort('helpful')">
-                    <i class="fas fa-thumbs-up"></i> 参考順
-                </button>
-                <button class="sort-tab <?= $sortBy === 'published' ? 'active' : '' ?>" 
-                        onclick="changeSort('published')">
-                    <i class="fas fa-calendar"></i> 公開順
-                </button>
-                <!-- Button trigger modal -->
-                <button type="button" class="sort-tab" data-bs-toggle="modal" data-bs-target="#exampleModal">
-                    <i class="fas fa-table"></i> 新しいサイト
-                </button>
+        <!-- デバッグ情報表示 -->
+        <?php if ($showDebug): ?>
+            <?= $debugInfo ?>
+        <?php endif; ?>
+
+        <!-- メインフィルターとアクション -->
+        <div class="main-filters">
+            <!-- 記事の種類フィルター（メイン機能） -->
+            <div class="article-type-filter">
+                <label for="main-article-type">
+                    <i class="fas fa-filter"></i> 記事の種類
+                </label>
+                <select id="main-article-type" onchange="applyMainFilter()">
+                    <option value="">すべての種類</option>
+                    <option value="programming" <?= $articleType === 'programming' ? 'selected' : '' ?>>プログラミング</option>
+                    <option value="shop" <?= $articleType === 'shop' ? 'selected' : '' ?>>ショップ運営</option>
+                    <option value="economy" <?= $articleType === 'economy' ? 'selected' : '' ?>>経済情報</option>
+                    <option value="technical" <?= $articleType === 'technical' ? 'selected' : '' ?>>技術知識</option>
+                    <option value="scenario" <?= $articleType === 'scenario' ? 'selected' : '' ?>>シナリオ</option>
+                    <option value="writing" <?= $articleType === 'writing' ? 'selected' : '' ?>>執筆</option>
+                    <option value="profit" <?= $articleType === 'profit' ? 'selected' : '' ?>>利益</option>
+                    <option value="agriculture" <?= $articleType === 'agriculture' ? 'selected' : '' ?>>農業</option>
+                    <option value="drawing" <?= $articleType === 'drawing' ? 'selected' : '' ?>>作画・イラスト</option>
+                    <option value="office" <?= $articleType === 'office' ? 'selected' : '' ?>>職場オフィス</option>
+                    <option value="warry" <?= $articleType === 'warry' ? 'selected' : '' ?>>心配事</option>
+                    <option value="what" <?= $articleType === 'what' ? 'selected' : '' ?>>AIとは</option>
+                </select>
             </div>
 
-            <!-- フィルター -->
-            <form method="GET" class="row g-3">
-                <input type="hidden" name="sort" value="<?= htmlspecialchars($sortBy) ?>">
+            <!-- アクションボタン -->
+            <div class="action-buttons">
+                <button type="button" class="action-btn" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                    <i class="fas fa-table"></i> 既存記事を登録
+                </button>
+                <a href="ai_experience_new.php" class="action-btn primary">
+                    <i class="fas fa-plus"></i> 体験記事を書く
+                </a>
+            </div>
+            
+            <!-- 検索フォーム -->
+            <form method="GET" class="search-form">
+                <input type="hidden" name="article_type" value="<?= htmlspecialchars($articleType) ?>">
+                <?php if ($showDebug): ?>
+                <input type="hidden" name="debug" value="1">
+                <?php endif; ?>
                 
-                <div class="col-md-3">
-                    <label class="form-label">
+                <div class="search-input-group">
+                    <label for="search">
                         <i class="fas fa-search"></i> キーワード検索
                     </label>
-                    <input type="text" class="form-control" name="search" 
-                           value="<?= htmlspecialchars($searchTerm) ?>" 
+                    <input type="text" id="search" name="search"
+                           value="<?= htmlspecialchars($searchTerm) ?>"
                            placeholder="タイトル・内容で検索">
                 </div>
-                
-                <div class="col-md-3">
-                    <label class="form-label">
-                        <i class="fas fa-robot"></i> AIサービス
-                    </label>
-                    <select name="ai_service" class="form-select">
-                        <option value="0">すべてのAIサービス</option>
-                        <?php foreach ($aiServices as $service): ?>
-                        <option value="<?= $service['id'] ?>" <?= $aiServiceId == $service['id'] ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($service['ai_service']) ?>
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                
-                <div class="col-md-2">
-                    <label class="form-label">
-                        <i class="fas fa-tags"></i> カテゴリ
-                    </label>
-                    <select name="category" class="form-select">
-                        <option value="0">すべて</option>
-                        <?php foreach ($categories as $category): ?>
-                        <option value="<?= $category['id'] ?>" <?= $categoryId == $category['id'] ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($category['name']) ?>
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary me-2">
-                        <i class="fas fa-search"></i> 検索
-                    </button>
-                    <a href="ai_portal_articles.php" class="btn btn-outline-secondary">
-                        <i class="fas fa-redo"></i>
-                    </a>
-                </div>
+                <button type="submit" class="search-btn">
+                    <i class="fas fa-search"></i> 検索
+                </button>
             </form>
         </div>
 
@@ -430,6 +641,9 @@ include 'includes/header.php';
                 <strong><?= number_format($totalArticles) ?>件</strong>のAI活用体験記事
                 <?php if ($verifiedOnly): ?>
                 <span class="badge bg-success ms-2">確認済みのみ</span>
+                <?php endif; ?>
+                <?php if (!empty($articleType)): ?>
+                <span class="badge bg-info ms-2">記事種類: <?= htmlspecialchars($articleType) ?></span>
                 <?php endif; ?>
                 <?php if ($totalPages > 1): ?>
                 <span class="ms-2 text-muted">
@@ -444,10 +658,7 @@ include 'includes/header.php';
             <div class="empty-state">
                 <i class="fas fa-newspaper"></i>
                 <h3>記事が見つかりませんでした</h3>
-                <p>検索条件を変更するか、新しい体験記事を投稿してみてください。</p>
-                <a href="ai_experience_new.php" class="btn btn-primary mt-3">
-                    <i class="fas fa-plus"></i> 体験記事を投稿する
-                </a>
+                <p>検索条件を変更してください。</p>
             </div>
         <?php else: ?>
             <div class="articles-grid">
@@ -464,16 +675,16 @@ include 'includes/header.php';
                             <h3 class="card-title">
                                 <?= $article['id'].".".htmlspecialchars($article['title']) ?>
                             </h3>
+                            <p class="card-summary">
+                                <span class="author-name"><b><?= htmlspecialchars($article['note_username']) ?></b></span>
+                                <?= htmlspecialchars($article['preview_text']) ?>
+                            </p>
                             <div class="card-footer">
                                 <div class="author-info">
                                     <img src="<?= htmlspecialchars($article['avatar_url'] ?: '/path/to/default/avatar.png') ?>" alt="<?= htmlspecialchars($article['note_username']) ?>" class="author-avatar">
-                                    </div>
-                                <!-- サマリ表示を追加 -->
-                                <p class="card-summary">
-                                    <span class="author-name"><b><?= htmlspecialchars($article['note_username']) ?></b></span>
-                                    <?= htmlspecialchars($article['preview_text']) ?>
-                                </p>
-                                <div class="card-footer">
+                                    <span class="author-name"><?= htmlspecialchars($article['note_username']) ?></span>
+                                </div>
+                                <div class="card-stats">
                                     <i class="fas fa-thumbs-up"></i>
                                     <span><?= number_format($article['helpful_count']) ?></span>
                                 </div>
@@ -574,15 +785,21 @@ include 'includes/header.php';
 </div>
 
 <script>
-function changeSort(sortType) {
+function applyMainFilter() {
     const url = new URL(window.location);
-    url.searchParams.set('sort', sortType);
-    url.searchParams.set('page', '1'); // ソート変更時は1ページ目に戻る
+    const articleType = document.getElementById('main-article-type').value;
+    
+    if (articleType) {
+        url.searchParams.set('article_type', articleType);
+    } else {
+        url.searchParams.delete('article_type');
+    }
+    
+    url.searchParams.set('page', '1');
     window.location.href = url.toString();
 }
 
 function viewArticle(noteUrl, articleId) {
-    // 閲覧数をカウント（Ajax）
     fetch('api/count_view.php', {
         method: 'POST',
         headers: {
@@ -593,45 +810,46 @@ function viewArticle(noteUrl, articleId) {
         })
     }).catch(err => console.log('View count failed:', err));
     
-    // note記事を新しいタブで開く
     window.open(noteUrl, '_blank');
 }
 </script>
+
 <?php include 'includes/footer.php'; ?>
+
 <!-- Modal -->
 <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-        <div class="container py-5">
-            <div class="form-container shadow-sm">
-                <h1 class="text-center mb-4">note記事から取得</h1>
-                
-                <form action="note_article_info.php" method="POST">
-                    <div class="mb-3">
-                        <label for="article_url" class="form-label">Note記事URL</label>
-                        <input type="url" class="form-control" id="article_url" name="url"
-                            placeholder="https://note.com/ユーザid/n/記事id/"
-                            required>
-                    </div>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="container py-5">
+                <div class="form-container shadow-sm">
+                    <h1 class="text-center mb-4">既存記事を登録</h1>
                     
-                    <div class="mb-3">
-                        <label for="ai_service_id" class="form-label">AIサービスを選択</label>
-                        <select class="form-select" id="ai_service_id" name="ai_service_id" required>
-                            <?php
-                                $ai_services = getAIServices();
-                                foreach ($ai_services as $service): 
-                            ?>
-                                <option value="<?= $service['id'] ?>"><?= htmlspecialchars($service['ai_service']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">記事情報を取得して保存</button>
-                    </div>
-                </form>
+                    <form action="note_article_info.php" method="POST">
+                        <div class="mb-3">
+                            <label for="article_url" class="form-label">Note記事URL</label>
+                            <input type="url" class="form-control" id="article_url" name="url"
+                                placeholder="https://note.com/ユーザid/n/記事id/"
+                                required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="ai_service_id" class="form-label">AIサービスを選択</label>
+                            <select class="form-select" id="ai_service_id" name="ai_service_id" required>
+                                <?php
+                                    $ai_services = getAIServices();
+                                    foreach ($ai_services as $service): 
+                                ?>
+                                    <option value="<?= $service['id'] ?>"><?= htmlspecialchars($service['ai_service']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">記事情報を取得して保存</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-  </div>
 </div>

@@ -324,10 +324,10 @@ include 'includes/header.php';
     margin-bottom: 0;
     }
     @media (max-width: 768px) {
-    .card-ai-article .thumbnail-wrapper img {
-        max-width: 100%;
-        height: 160px;
-    }
+        .card-ai-article .thumbnail-wrapper img {
+            max-width: 100%;
+            height: 160px;
+        }
     }
 </style>
 
@@ -384,7 +384,7 @@ include 'includes/header.php';
           <option value="office" <?= $article['article_type'] === 'office' ? 'selected' : '' ?>>オフィス</option>
           <option value="agriculture" <?= $article['article_type'] === 'agriculture' ? 'selected' : '' ?>>農業</option>
           <option value="warry" <?= $article['article_type'] === 'warry' ? 'selected' : '' ?>>悩み相談</option>
-          <option value="unknown" <?= $article['article_type'] === 'unknown' ? 'selected' : '' ?>>不明</option>
+          <option value="what" <?= $article['article_type'] === 'what' ? 'selected' : '' ?>>AIとは</option>
         </select>
         <input type="hidden" name="article_id" value="<?= $article['article_id'] ?>">
         <button type="submit" name="update_article_type" class="btn btn-sm btn-secondary">記事タイプを変更する</button>

@@ -114,6 +114,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $_SESSION['article_content'] = $_POST['article_content'];
                 echo json_encode(['success' => true]);
                 exit;
+            case 'get_ai_service_info':
+                $aiServiceId = intval($_POST['ai_service_id']);
+                $aiService = getAIServiceById($aiServiceId);    
+                if ($aiService) {
+                    echo json_encode([
+                        'success' => true,
+                        'aiService' => $aiService
+                    ]);
+                } else {
+                    echo json_encode(['success' => false, 'error' => 'AIサービスが見つかりません']);
+                }
+                exit;
+            default:
+                echo json_encode(['success' => false, 'error' => '不明なアクションです']);
+                exit;
         }
     } catch (Exception $e) {
         // 例外をキャッチしてエラーメッセージをJSONで返す
@@ -130,139 +145,139 @@ include 'includes/header.php';
 ?>
 
 <style>
-.pane-container {
-    display: flex;
-    height: calc(100vh - 200px);
-    min-height: 600px;
-}
+    .pane-container {
+        display: flex;
+        height: calc(100vh - 200px);
+        min-height: 600px;
+    }
 
-.left-pane, .right-pane {
-    flex: 1;
-    padding: 20px;
-    border: 1px solid #dee2e6;
-    overflow-y: auto;
-}
+    .left-pane, .right-pane {
+        flex: 1;
+        padding: 20px;
+        border: 1px solid #dee2e6;
+        overflow-y: auto;
+    }
 
-.left-pane {
-    background-color: #f8f9fa;
-    border-right: none;
-}
+    .left-pane {
+        background-color: #f8f9fa;
+        border-right: none;
+    }
 
-.right-pane {
-    background-color: #ffffff;
-}
+    .right-pane {
+        background-color: #ffffff;
+    }
 
-.pane-header {
-    display: flex;
-    justify-content: between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #dee2e6;
-}
+    .pane-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #dee2e6;
+    }
 
-.swap-btn {
-    background: none;
-    border: none;
-    font-size: 1.2em;
-    cursor: pointer;
-    color: #6c757d;
-}
+    .swap-btn {
+        background: none;
+        border: none;
+        font-size: 1.2em;
+        cursor: pointer;
+        color: #6c757d;
+    }
 
-.swap-btn:hover {
-    color: #495057;
-}
+    .swap-btn:hover {
+        color: #495057;
+    }
 
-.article-editor {
-    width: 100%;
-    height: 400px;
-    border: 1px solid #ced4da;
-    border-radius: 0.375rem;
-    padding: 10px;
-    font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
-    font-size: 14px;
-    line-height: 1.6;
-    resize: vertical;
-}
+    .article-editor {
+        width: 100%;
+        height: 400px;
+        border: 1px solid #ced4da;
+        border-radius: 0.375rem;
+        padding: 10px;
+        font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+        font-size: 14px;
+        line-height: 1.6;
+        resize: vertical;
+    }
 
-.ai-summary-box {
-    background-color: #e3f2fd;
-    border: 1px solid #2196f3;
-    border-radius: 0.375rem;
-    padding: 15px;
-    margin-top: 15px;
-}
+    .ai-summary-box {
+        background-color: #e3f2fd;
+        border: 1px solid #2196f3;
+        border-radius: 0.375rem;
+        padding: 15px;
+        margin-top: 15px;
+    }
 
-.satisfaction-stars {
-    display: flex;
-    gap: 5px;
-}
+    .satisfaction-stars {
+        display: flex;
+        gap: 5px;
+    }
 
-.satisfaction-stars input[type="radio"] {
-    display: none;
-}
+    .satisfaction-stars input[type="radio"] {
+        display: none;
+    }
 
-.satisfaction-stars label {
-    font-size: 1.5em;
-    color: #ddd;
-    cursor: pointer;
-    transition: color 0.2s;
-}
+    .satisfaction-stars label {
+        font-size: 1.5em;
+        color: #ddd;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
 
-.satisfaction-stars input[type="radio"]:checked ~ label,
-.satisfaction-stars label:hover {
-    color: #ffc107;
-}
+    .satisfaction-stars input[type="radio"]:checked ~ label,
+    .satisfaction-stars label:hover {
+        color: #ffc107;
+    }
 
-.draft-info {
-    background-color: #fff3cd;
-    border: 1px solid #ffeaa7;
-    border-radius: 0.375rem;
-    padding: 10px;
-    margin-bottom: 15px;
-    font-size: 0.9em;
-}
+    .draft-info {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 0.375rem;
+        padding: 10px;
+        margin-bottom: 15px;
+        font-size: 0.9em;
+    }
 
-.action-buttons {
-    position: sticky;
-    bottom: 0;
-    background-color: white;
-    padding: 15px 0;
-    border-top: 1px solid #dee2e6;
-    margin-top: 20px;
-}
+    .action-buttons {
+        position: sticky;
+        bottom: 0;
+        background-color: white;
+        padding: 15px 0;
+        border-top: 1px solid #dee2e6;
+        margin-top: 20px;
+    }
 
-.feature-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 10px;
-}
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+    }
 
-.step-indicator {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 30px;
-}
+    .step-indicator {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 30px;
+    }
 
-.step-indicator .step {
-    display: flex;
-    align-items: center;
-    padding: 10px 20px;
-    background-color: #e9ecef;
-    border-radius: 20px;
-    margin: 0 10px;
-    font-weight: bold;
-}
+    .step-indicator .step {
+        display: flex;
+        align-items: center;
+        padding: 10px 20px;
+        background-color: #e9ecef;
+        border-radius: 20px;
+        margin: 0 10px;
+        font-weight: bold;
+    }
 
-.step-indicator .step.active {
-    background-color: #007bff;
-    color: white;
-}
+    .step-indicator .step.active {
+        background-color: #007bff;
+        color: white;
+    }
 
-.step-indicator .step.completed {
-    background-color: #28a745;
-    color: white;
-}
+    .step-indicator .step.completed {
+        background-color: #28a745;
+        color: white;
+    }
 </style>
 
 <div class="container-fluid py-4">
@@ -330,7 +345,7 @@ include 'includes/header.php';
                                 <div class="mb-3">
                                     <label class="form-label">使用目的 <span class="text-danger">*</span></label>
                                     <textarea class="form-control" name="usage_purpose" rows="3" required
-                                              placeholder="どのような目的でこのAIを使いましたか？"></textarea>
+                                                placeholder="どのような目的でこのAIを使いましたか？"></textarea>
                                 </div>
 
                                 <!-- 使用した機能 -->
@@ -340,8 +355,8 @@ include 'includes/header.php';
                                         <?php foreach ($promptCategories as $category): ?>
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" 
-                                                       name="features_used[]" value="<?= $category['id'] ?>"
-                                                       id="feature_<?= $category['id'] ?>">
+                                                    name="features_used[]" value="<?= $category['id'] ?>"
+                                                    id="feature_<?= $category['id'] ?>">
                                                 <label class="form-check-label" for="feature_<?= $category['id'] ?>">
                                                     <?= htmlspecialchars($category['name']) ?>
                                                 </label>
@@ -378,7 +393,7 @@ include 'includes/header.php';
                                 <div class="mb-3">
                                     <label class="form-label">メモ・感想</label>
                                     <textarea class="form-control" name="notes" rows="3"
-                                              placeholder="使って感じたことや気づいたことがあれば記入して下さい"></textarea>
+                                            placeholder="使って感じたことや気づいたことがあれば記入して下さい"></textarea>
                                 </div>
 
                                 <!-- AIサマリー表示エリア -->
@@ -828,11 +843,125 @@ function addImage() {
     alert('画像追加機能は今後実装予定です');
 }
 
-// AIレビュー（プレースホルダー）
+// AIレビュー機能の実装
 function reviewWithAI() {
-    alert('AIレビュー機能は今後実装予定です');
+    const aiServiceSelect = document.getElementById('ai_service_id');
+    const articleContent = document.getElementById('article-editor').value;
+    
+    // AIサービスが選択されているかチェック
+    if (!aiServiceSelect.value) {
+        alert('左ペインでAIサービスを選択してください。');
+        return;
+    }
+    
+    // 記事内容があるかチェック
+    if (!articleContent.trim()) {
+        alert('記事内容が入力されていません。');
+        return;
+    }
+    
+    // AIサービス情報を取得
+    getAIServiceInfo(aiServiceSelect.value, articleContent);
 }
+// AIサービス情報取得
+function getAIServiceInfo(aiServiceId, articleContent) {
+    fetch(window.location.pathname, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: `action=get_ai_service_info&ai_service_id=${aiServiceId}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAIReviewDialog(data.aiService, articleContent);
+        } else {
+            alert('AIサービス情報の取得に失敗しました');
+        }
+    })
+    .catch(error => {
+        alert('エラーが発生しました');
+    });
+}
+// AIレビューダイアログ表示
+function showAIReviewDialog(aiService, articleContent) {
+    const prompt = `AI体験をもとにこのような記事を書いてみました。多くの方に読んでもらえるように、題名、初めに、本文、終わりにの項目名や文章の提案と見直しをお願いします。　以下、AI体験記事作成ページの右側に集まった情報：
 
+${articleContent}`;
+
+    const modal = `
+        <div class="modal fade" id="aiReviewModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="fas fa-robot"></i> AIレビュー</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <h6>使用するAI</h6>
+                            <div class="d-flex align-items-center mb-2">
+                                <strong>${aiService.ai_service}</strong>
+                                <span class="badge bg-secondary ms-2">${aiService.company_name}</span>
+                            </div>
+                            <a href="${aiService.launch_url.replace('{prompt}', encodeURIComponent(prompt))}" 
+                               target="_blank" class="btn btn-primary">
+                                <i class="fas fa-external-link-alt"></i> ${aiService.ai_service}を開く
+                            </a>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6>コピー用プロンプト</h6>
+                            <textarea id="promptText" class="form-control" rows="8" readonly>${prompt}</textarea>
+                            <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="copyPrompt()">
+                                <i class="fas fa-copy"></i> プロンプトをコピー
+                            </button>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            上記のリンクをクリックして${aiService.ai_service}を開き、プロンプトをコピーして貼り付けてください。
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // 既存のモーダルがあれば削除
+    const existingModal = document.getElementById('aiReviewModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // モーダルをページに追加
+    document.body.insertAdjacentHTML('beforeend', modal);
+    
+    // モーダルを表示
+    const modalElement = new bootstrap.Modal(document.getElementById('aiReviewModal'));
+    modalElement.show();
+}
+// プロンプトコピー機能
+function copyPrompt() {
+    const promptText = document.getElementById('promptText');
+    promptText.select();
+    document.execCommand('copy');
+    
+    // コピー完了メッセージ
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-check"></i> コピー完了';
+    button.classList.add('btn-success');
+    button.classList.remove('btn-outline-secondary');
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.classList.remove('btn-success');
+        button.classList.add('btn-outline-secondary');
+    }, 2000);
+}
 // 編集完了時に記事内容をセッションに保存
 function proceedToEdit() {
     const articleContent = document.getElementById('article-editor').value;
