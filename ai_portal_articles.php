@@ -12,50 +12,81 @@ $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $limit = 35;
 $offset = ($page - 1) * $limit;
 
-// フィルター設定（AIの種類フィルターを削除）
+// フィルター設定
 $articleType = isset($_GET['article_type']) ? trim($_GET['article_type']) : '';
 $verifiedOnly = isset($_GET['verified']) ? $_GET['verified'] === '1' : false;
 $searchTerm = isset($_GET['search']) ? trim($_GET['search']) : '';
 $showDebug = isset($_GET['debug']) ? $_GET['debug'] === '1' : false;
 
-// デバッグ情報
+// デバッグ情報の初期化
 $debugInfo = '';
+
+// デバッグ情報をさらに強化
 if ($showDebug) {
-    $debugInfo .= "<div style='background: #f0f0f0; padding: 10px; margin: 10px; border: 1px solid #ccc;'>";
-    $debugInfo .= "<h4>🐛 デバッグ情報</h4>";
-    $debugInfo .= "articleType: '" . htmlspecialchars($articleType) . "'<br>";
-    $debugInfo .= "page: " . $page . ", limit: " . $limit . ", offset: " . $offset . "<br>";
-
-    // 基本的なテスト
-    $basicTest = "SELECT COUNT(*) as count FROM ai_articles WHERE status = 'verified'";
-    $basicResult = $conn->query($basicTest);
-    if ($basicResult) {
-        $basicCount = $basicResult->fetch_assoc()['count'];
-        $debugInfo .= "基本的な verified 記事数: " . $basicCount . "件<br>";
+    $debugInfo .= "<div style='background: #fff3cd; padding: 10px; margin: 10px; border: 1px solid #ffeaa7;'>";
+    $debugInfo .= "<h5>🔍 詳細デバッグ - フィルター適用前後の比較:</h5>";
+    
+    // フィルター適用前の件数
+    $beforeFilterSql = "SELECT COUNT(*) as count FROM ai_articles a LEFT JOIN AIInfo ai ON a.ai_service_id = ai.id WHERE a.status = 'verified'";
+    $beforeResult = $conn->query($beforeFilterSql);
+    if ($beforeResult) {
+        $beforeCount = $beforeResult->fetch_assoc()['count'];
+        $debugInfo .= "フィルター適用前の総件数: " . $beforeCount . "件<br>";
     }
-
-    // 記事タイプ別の件数
+    
+    // 記事タイプフィルターのみ適用
     if (!empty($articleType)) {
-        $typeTest = "SELECT COUNT(*) as count FROM ai_articles WHERE status = 'verified' AND article_type = ?";
-        $typeStmt = $conn->prepare($typeTest);
-        $typeStmt->bind_param('s', $articleType);
-        $typeStmt->execute();
-        $typeCount = $typeStmt->get_result()->fetch_assoc()['count'];
-        $debugInfo .= "記事タイプ '{$articleType}' の件数: " . $typeCount . "件<br>";
+        $typeOnlySql = "SELECT COUNT(*) as count FROM ai_articles a LEFT JOIN AIInfo ai ON a.ai_service_id = ai.id WHERE a.status = 'verified' AND a.article_type = ?";
+        $typeOnlyStmt = $conn->prepare($typeOnlySql);
+        $typeOnlyStmt->bind_param('s', $articleType);
+        $typeOnlyStmt->execute();
+        $typeOnlyCount = $typeOnlyStmt->get_result()->fetch_assoc()['count'];
+        $debugInfo .= "記事タイプ '{$articleType}' のみフィルター: " . $typeOnlyCount . "件<br>";
+        
+        // AIサービスとのJOINで失われる記事があるかチェック
+        $noJoinSql = "SELECT COUNT(*) as count FROM ai_articles a WHERE a.status = 'verified' AND a.article_type = ?";
+        $noJoinStmt = $conn->prepare($noJoinSql);
+        $noJoinStmt->bind_param('s', $articleType);
+        $noJoinStmt->execute();
+        $noJoinCount = $noJoinStmt->get_result()->fetch_assoc()['count'];
+        $debugInfo .= "JOIN前の記事タイプ '{$articleType}' 件数: " . $noJoinCount . "件<br>";
+        
+        if ($noJoinCount != $typeOnlyCount) {
+            $debugInfo .= "<strong style='color: red;'>⚠️ JOINで失われている記事があります！</strong><br>";
+        }
     }
-
+    
+    // 検索条件の影響をチェック
+    if (!empty($searchTerm)) {
+        $debugInfo .= "検索キーワード: '" . htmlspecialchars($searchTerm) . "'<br>";
+        
+        if (!empty($articleType)) {
+            $searchTestSql = "SELECT COUNT(*) as count FROM ai_articles a LEFT JOIN AIInfo ai ON a.ai_service_id = ai.id 
+                             WHERE a.status = 'verified' AND a.article_type = ? AND (a.title LIKE ? OR a.summary LIKE ?)";
+            $searchTestStmt = $conn->prepare($searchTestSql);
+            $searchPattern = '%' . $searchTerm . '%';
+            $searchTestStmt->bind_param('sss', $articleType, $searchPattern, $searchPattern);
+            $searchTestStmt->execute();
+            $searchTestCount = $searchTestStmt->get_result()->fetch_assoc()['count'];
+            $debugInfo .= "記事タイプ + 検索条件: " . $searchTestCount . "件<br>";
+        }
+    }
+    
     $debugInfo .= "</div>";
 }
 
-// WHERE条件の構築（AIの種類フィルターを削除）
+// WHERE条件の構築（1回のみ）
 $whereConditions = [];
 $params = [];
 $types = '';
 
+// 基本条件（必須）
+// $whereConditions[] = "a.status = 'verified'";
+
 // 確認済みフィルター
-if ($verifiedOnly) {
-    $whereConditions[] = "a.is_verified = 1";
-}
+// if ($verifiedOnly) {
+//     $whereConditions[] = "a.is_verified = 1";
+// }
 
 // 記事タイプフィルター（記事の種類）
 if (!empty($articleType)) {
@@ -64,38 +95,39 @@ if (!empty($articleType)) {
     $types .= 's';
 }
 
-// 検索フィルター
+// 検索フィルターの条件を緩和
 if (!empty($searchTerm)) {
-    $whereConditions[] = "(a.title LIKE ? OR a.summary LIKE ?)";
+    // より柔軟な検索条件に変更
+    $whereConditions[] = "(a.title LIKE ? OR a.summary LIKE ? OR ai.ai_service LIKE ?)";
     $searchPattern = '%' . $searchTerm . '%';
     $params[] = $searchPattern;
     $params[] = $searchPattern;
-    $types .= 'ss';
+    $params[] = $searchPattern;
+    $types .= 'sss';
 }
 
-// メインクエリ - ORDER BYを削除（表示優先）
+// メインクエリを構築
 $sql = "SELECT 
     a.id, a.url, a.title, a.summary, a.article_type, a.status, a.is_verified,
     a.published_at, a.view_count, a.helpful_count, a.created_at,
     a.thumbnail_url,
-    ai.ai_service, ai.id as ai_service_id,
+    COALESCE(ai.ai_service, 'Unknown AI') as ai_service, 
+    COALESCE(ai.id, 0) as ai_service_id,
     c.name as category_name,
     COALESCE(au.note_username, 'Unknown User') as note_username,
     au.avatar_url,
     COALESCE(SUBSTRING(a.summary, 1, 120), SUBSTRING(a.title, 1, 120), 'AI活用体験記事') as preview_text
 FROM ai_articles a
-JOIN AIInfo ai ON a.ai_service_id = ai.id
+LEFT JOIN AIInfo ai ON a.ai_service_id = ai.id
 LEFT JOIN ai_users au ON a.user_id = au.id
-LEFT JOIN AIPromptCategories c ON a.category_id = c.id
-WHERE a.status = 'verified'";
+LEFT JOIN AIPromptCategories c ON a.category_id = c.id";
 
 // WHERE条件を追加
 if (!empty($whereConditions)) {
-    $sql .= " AND " . implode(" AND ", $whereConditions);
+    $sql .= " WHERE " . implode(" AND ", $whereConditions);
 }
 
-// ORDER BYを削除し、LIMIT/OFFSETのみ
-$sql .= " LIMIT ? OFFSET ?";
+$sql .= " ORDER BY a.id DESC LIMIT ? OFFSET ?";
 
 $mainParams = $params;
 $mainParams[] = $limit;
@@ -128,9 +160,9 @@ if (!$stmt->execute()) {
 $result = $stmt->get_result();
 $articles = $result->fetch_all(MYSQLI_ASSOC);
 
-// 総記事数を取得（AIの種類フィルターを削除）
+// 総記事数を取得
 $countSql = "SELECT COUNT(*) as total FROM ai_articles a 
-             JOIN AIInfo ai ON a.ai_service_id = ai.id
+             LEFT JOIN AIInfo ai ON a.ai_service_id = ai.id
              WHERE a.status = 'verified'";
 
 $countParams = [];
@@ -146,12 +178,12 @@ if (!empty($articleType)) {
     $countTypes .= 's';
 }
 
-if (!empty($searchTerm)) {
-    $countSql .= " AND (a.title LIKE ? OR a.summary LIKE ?)";
-    $countParams[] = $searchPattern;
-    $countParams[] = $searchPattern;
-    $countTypes .= 'ss';
-}
+// if (!empty($searchTerm)) {
+//     $countSql .= " AND (a.title LIKE ? OR a.summary LIKE ?)";
+//     $countParams[] = $searchPattern;
+//     $countParams[] = $searchPattern;
+//     $countTypes .= 'ss';
+// }
 
 if (!empty($countParams)) {
     $countStmt = $conn->prepare($countSql);
@@ -159,8 +191,82 @@ if (!empty($countParams)) {
     $countStmt->execute();
     $totalArticles = $countStmt->get_result()->fetch_assoc()['total'];
 } else {
-    $result = $conn->query($countSql);
-    $totalArticles = $result->fetch_assoc()['total'];
+    $countResult = $conn->query($countSql);
+    $totalArticles = $countResult->fetch_assoc()['total'];
+}
+
+// データベース整合性チェック
+if ($showDebug) {
+    $debugInfo .= "<div style='background: #f8d7da; padding: 10px; margin: 10px; border: 1px solid #f5c6cb;'>";
+    $debugInfo .= "<h5>🔧 データベース整合性チェック:</h5>";
+    
+    $integrityCheck = "SELECT 
+        COUNT(*) as total_articles,
+        COUNT(a.ai_service_id) as articles_with_ai_service_id,
+        COUNT(ai.id) as articles_with_valid_ai_service
+        FROM ai_articles a 
+        LEFT JOIN AIInfo ai ON a.ai_service_id = ai.id 
+        WHERE a.status = 'verified'";
+    
+    $integrityResult = $conn->query($integrityCheck);
+    if ($integrityResult) {
+        $integrity = $integrityResult->fetch_assoc();
+        $debugInfo .= "総記事数: {$integrity['total_articles']}<br>";
+        $debugInfo .= "ai_service_idがある記事: {$integrity['articles_with_ai_service_id']}<br>";
+        $debugInfo .= "有効なAIサービスがある記事: {$integrity['articles_with_valid_ai_service']}<br>";
+        
+        if ($integrity['total_articles'] != $integrity['articles_with_valid_ai_service']) {
+            $debugInfo .= "<strong style='color: red;'>⚠️ AIサービス情報が不完全な記事があります</strong><br>";
+        }
+    }
+    
+    $debugInfo .= "</div>";
+}
+
+
+// 記事タイプの定義を一元化
+function getArticleTypes() {
+    return [
+        'programming' => 'プログラミング',
+        'shop' => 'ショップ運営',
+        'economy' => '経済情報',
+        'technical' => '技術知識',
+        'scenario' => 'シナリオ',
+        'writing' => '執筆',
+        'profit' => '利益',
+        'agriculture' => '農業',
+        'drawing' => '作画・イラスト',
+        'office' => '職場オフィス',
+        'warry' => '心配事',
+        'what' => 'AIとは'
+    ];
+}
+
+// 記事タイプの日本語名を取得する関数を修正
+function getArticleTypeLabel($articleType) {
+    $types = getArticleTypes();
+    return $types[$articleType] ?? $articleType;
+}
+
+// データベースから実際に使用されている記事タイプを取得
+function getUsedArticleTypes() {
+    global $conn;
+    $sql = "SELECT DISTINCT article_type, COUNT(*) as count 
+            FROM ai_articles 
+            WHERE article_type IS NOT NULL AND article_type != ''
+            GROUP BY article_type 
+            ORDER BY count DESC";
+    
+    $result = $conn->query($sql);
+    $usedTypes = [];
+    
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $usedTypes[$row['article_type']] = $row['count'];
+        }
+    }
+    
+    return $usedTypes;
 }
 
 $totalPages = ceil($totalArticles / $limit);
@@ -183,6 +289,31 @@ include 'includes/header.php';
 ?>
 
 <style>
+    .article-type-badge {
+    display: inline-block;
+    background-color: #e9ecef;
+    color: #495057;
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-bottom: 4px;
+    vertical-align: middle;
+    }
+
+    /* 記事タイプ別の色分け */
+    .article-type-badge.programming { background-color: #d4edda; color: #155724; }
+    .article-type-badge.shop { background-color: #d1ecf1; color: #0c5460; }
+    .article-type-badge.economy { background-color: #fff3cd; color: #856404; }
+    .article-type-badge.technical { background-color: #f8d7da; color: #721c24; }
+    .article-type-badge.agriculture { background-color: #d4edda; color: #155724; }
+    .article-type-badge.office { background-color: #e2e3e5; color: #383d41; }
+    .article-type-badge.warry { background-color: #f5c6cb; color: #721c24; }
+    .article-type-badge.writing { background-color: #cce5ff; color: #004085; }
+    .article-type-badge.profit { background-color: #fff3cd; color: #856404; }
+    .article-type-badge.drawing { background-color: #e7e3ff; color: #5a2d82; }
+    .article-type-badge.scenario { background-color: #ffe6cc; color: #8b4513; }
+    .article-type-badge.what { background-color: #f0f0f0; color: #333; }
     /* === note風グリッドレイアウト用CSS === */
     .articles-grid {
         display: grid;
@@ -583,24 +714,25 @@ include 'includes/header.php';
         <!-- メインフィルターとアクション -->
         <div class="main-filters">
             <!-- 記事の種類フィルター（メイン機能） -->
+            <!-- 記事の種類フィルター（メイン機能） -->
             <div class="article-type-filter">
                 <label for="main-article-type">
                     <i class="fas fa-filter"></i> 記事の種類
                 </label>
                 <select id="main-article-type" onchange="applyMainFilter()">
                     <option value="">すべての種類</option>
-                    <option value="programming" <?= $articleType === 'programming' ? 'selected' : '' ?>>プログラミング</option>
-                    <option value="shop" <?= $articleType === 'shop' ? 'selected' : '' ?>>ショップ運営</option>
-                    <option value="economy" <?= $articleType === 'economy' ? 'selected' : '' ?>>経済情報</option>
-                    <option value="technical" <?= $articleType === 'technical' ? 'selected' : '' ?>>技術知識</option>
-                    <option value="scenario" <?= $articleType === 'scenario' ? 'selected' : '' ?>>シナリオ</option>
-                    <option value="writing" <?= $articleType === 'writing' ? 'selected' : '' ?>>執筆</option>
-                    <option value="profit" <?= $articleType === 'profit' ? 'selected' : '' ?>>利益</option>
-                    <option value="agriculture" <?= $articleType === 'agriculture' ? 'selected' : '' ?>>農業</option>
-                    <option value="drawing" <?= $articleType === 'drawing' ? 'selected' : '' ?>>作画・イラスト</option>
-                    <option value="office" <?= $articleType === 'office' ? 'selected' : '' ?>>職場オフィス</option>
-                    <option value="warry" <?= $articleType === 'warry' ? 'selected' : '' ?>>心配事</option>
-                    <option value="what" <?= $articleType === 'what' ? 'selected' : '' ?>>AIとは</option>
+                    <?php 
+                    $articleTypes = getArticleTypes();
+                    $usedTypes = getUsedArticleTypes();
+                    
+                    foreach ($articleTypes as $value => $label): 
+                        $count = isset($usedTypes[$value]) ? $usedTypes[$value] : 0;
+                        $selected = $articleType === $value ? 'selected' : '';
+                    ?>
+                        <option value="<?= $value ?>" <?= $selected ?>>
+                            <?= htmlspecialchars($label) ?> (<?= $count ?>件)
+                        </option>
+                    <?php endforeach; ?>
                 </select>
             </div>
 
@@ -673,6 +805,12 @@ include 'includes/header.php';
                         </div>
                         <div class="card-content">
                             <h3 class="card-title">
+                                <!-- 記事タイプバッジを追加 -->
+                                <?php if (!empty($article['article_type'])): ?>
+                                    <span class="article-type-badge <?= $article['article_type'] ?>">
+                                        <?= htmlspecialchars(getArticleTypeLabel($article['article_type'])) ?>
+                                    </span><br>
+                                <?php endif; ?>
                                 <?= $article['id'].".".htmlspecialchars($article['title']) ?>
                             </h3>
                             <p class="card-summary">
@@ -785,33 +923,33 @@ include 'includes/header.php';
 </div>
 
 <script>
-function applyMainFilter() {
-    const url = new URL(window.location);
-    const articleType = document.getElementById('main-article-type').value;
-    
-    if (articleType) {
-        url.searchParams.set('article_type', articleType);
-    } else {
-        url.searchParams.delete('article_type');
+    function applyMainFilter() {
+        const url = new URL(window.location);
+        const articleType = document.getElementById('main-article-type').value;
+        
+        if (articleType) {
+            url.searchParams.set('article_type', articleType);
+        } else {
+            url.searchParams.delete('article_type');
+        }
+        
+        url.searchParams.set('page', '1');
+        window.location.href = url.toString();
     }
-    
-    url.searchParams.set('page', '1');
-    window.location.href = url.toString();
-}
 
-function viewArticle(noteUrl, articleId) {
-    fetch('api/count_view.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            article_id: articleId
-        })
-    }).catch(err => console.log('View count failed:', err));
-    
-    window.open(noteUrl, '_blank');
-}
+    function viewArticle(noteUrl, articleId) {
+        fetch('api/count_view.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                article_id: articleId
+            })
+        }).catch(err => console.log('View count failed:', err));
+        
+        window.open(noteUrl, '_blank');
+    }
 </script>
 
 <?php include 'includes/footer.php'; ?>
@@ -823,7 +961,6 @@ function viewArticle(noteUrl, articleId) {
             <div class="container py-5">
                 <div class="form-container shadow-sm">
                     <h1 class="text-center mb-4">既存記事を登録</h1>
-                    
                     <form action="note_article_info.php" method="POST">
                         <div class="mb-3">
                             <label for="article_url" class="form-label">Note記事URL</label>
@@ -831,7 +968,6 @@ function viewArticle(noteUrl, articleId) {
                                 placeholder="https://note.com/ユーザid/n/記事id/"
                                 required>
                         </div>
-                        
                         <div class="mb-3">
                             <label for="ai_service_id" class="form-label">AIサービスを選択</label>
                             <select class="form-select" id="ai_service_id" name="ai_service_id" required>
@@ -843,7 +979,20 @@ function viewArticle(noteUrl, articleId) {
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        
+                        <!-- 記事タイプ選択を追加 -->
+                        <!-- 記事タイプ選択を追加 -->
+                            <div class="mb-3">
+                                <label for="modal_article_type" class="form-label">記事の種類</label>
+                                <select class="form-select" id="modal_article_type" name="article_type" required>
+                                    <option value="">選択してください</option>
+                                    <?php 
+                                    $articleTypes = getArticleTypes();
+                                    foreach ($articleTypes as $value => $label): 
+                                    ?>
+                                        <option value="<?= $value ?>"><?= htmlspecialchars($label) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary">記事情報を取得して保存</button>
                         </div>

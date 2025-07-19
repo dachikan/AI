@@ -91,25 +91,22 @@
                         <a class="nav-link" href="ai_portal_articles.php">記事一覧</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="AI_comparison.php">AI一覧・比較</a>
+                    </li>
+                    <!-- <li class="nav-item">
                         <a class="nav-link" href="AI_list.php">AI一覧</a>
-                    </li>
+                    </li> -->
                     <li class="nav-item">
-                        <a class="nav-link" href="AI_categories.php">カテゴリ</a>
+                        <a class="nav-link" href="AI_categories.php">AIカテゴリ</a>
                     </li>
-                    <li class="nav-item">
+                    <!-- <li class="nav-item">
                         <a class="nav-link" href="AI_ranking.php">ランキング</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="AI_comparison.php">比較</a>
-                    </li>
+                    </li> -->
                     <li class="nav-item">
                         <a class="nav-link" href="AI_dashboard.php">dashboard</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="admin_articles.php"><img src="icons/bug.png" alt="admin" style="width: 20px; height: 20px;"> </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="note_article_info.php"><img src="icons/bug2.png" alt="admin" style="width: 20px; height: 20px;"> </a>
+                        <a class="nav-link" href="admin_articles.php"><img src="icons/bug2.png" alt="admin" style="width: 20px; height: 20px;"> </a>
                     </li>
                 </ul>
                 <form class="d-flex" action="AI_search.php" method="GET">

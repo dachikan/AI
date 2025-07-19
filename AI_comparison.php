@@ -24,12 +24,17 @@ include 'includes/header.php';
 ?>
 
 <div class="container py-4">
-    <h1 class="mb-4"><i class="fas fa-balance-scale"></i> AI サービス比較</h1>
+    <h1 class="mb-4"><i class="fas fa-balance-scale"></i> AI一覧・比較</h1>
 
     <!-- サービス選択セクション -->
     <div class="card mb-4">
         <div class="card-header">
-            <h3>比較するAIサービスを選択</h3>
+            <h3 
+                title="チェックボックスから2つ以上のサービスを選択して「比較する」ボタンをクリックしてください。"
+                style="cursor:help;"
+            >
+                AI詳細へリンクする・AIを選択して比較する
+            </h3>
         </div>
         <div class="card-body">
             <form method="POST" id="comparisonForm">
@@ -40,15 +45,15 @@ include 'includes/header.php';
                                 <div class="col-md-3 mb-2">
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" name="compare_ids[]" 
-                                               value="<?= $service['id'] ?>" id="service_<?= $service['id'] ?>"
-                                               <?= in_array($service['id'], $compareIds) ? 'checked' : '' ?>>
-                                        <label class="form-check-label" for="service_<?= $service['id'] ?>">
+                                                value="<?= $service['id'] ?>" id="service_<?= $service['id'] ?>"
+                                                <?= in_array($service['id'], $compareIds) ? 'checked' : '' ?>>
+                                        <a href="AI_detail.php?id=<?= $service['id'] ?>" style="text-decoration:none;color:inherit;">
                                             <img src="icons/<?= htmlspecialchars($service['ai_icon']) ?>" 
-                                                 alt="<?= htmlspecialchars($service['ai_service']) ?>" 
-                                                 style="width: 20px; height: 20px; margin-right: 5px;"
-                                                 onerror="this.src='icons/default-icon.png'">
+                                                    alt="<?= htmlspecialchars($service['ai_service']) ?>" 
+                                                    style="width: 20px; height: 20px; margin-right: 5px;"
+                                                    onerror="this.src='icons/default-icon.png'">
                                             <?= htmlspecialchars($service['ai_service']) ?>
-                                        </label>
+                                        </a>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
@@ -65,6 +70,9 @@ include 'includes/header.php';
                             <button type="button" class="btn btn-outline-danger" onclick="clearComparison()">
                                 <i class="fas fa-trash"></i> クリア
                             </button>
+                            <a href="AI_ranking.php" class="btn btn-outline-success">
+                                <i class="fas fa-trophy"></i> ランキングを見る
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -83,11 +91,11 @@ include 'includes/header.php';
                         <th class="text-center">
                             <div class="p-3">
                                 <img src="icons/<?= htmlspecialchars($service['ai_icon']) ?>" 
-                                     alt="<?= htmlspecialchars($service['ai_service']) ?>" 
-                                     class="ai-icon mb-2"
-                                     onerror="this.src='icons/default-icon.png'">
-                                <h5><?= htmlspecialchars($service['ai_service']) ?></h5>
-                                <small class="text-muted"><?= htmlspecialchars($service['company_name']) ?></small>
+                                         alt="<?= htmlspecialchars($service['ai_service']) ?>" 
+                                         class="ai-icon mb-2"
+                                         onerror="this.src='icons/default-icon.png'">
+                                    <h5><?= htmlspecialchars($service['ai_service']) ?></h5>
+                                    <small class="text-muted"><?= htmlspecialchars($service['company_name']) ?></small>
                             </div>
                         </th>
                     <?php endforeach; ?>
@@ -272,7 +280,7 @@ include 'includes/header.php';
     <div class="text-center py-5">
         <i class="fas fa-balance-scale fa-3x text-muted mb-3"></i>
         <h4>比較するAIサービスを選択してください</h4>
-        <p class="text-muted">上記のチェックボックスから2つ以上のサービスを選択して「比較する」ボタンをクリックしてください。</p>
+        <!-- 説明文は削除 -->
     </div>
     <?php endif; ?>
 
@@ -282,9 +290,6 @@ include 'includes/header.php';
             <div class="d-flex justify-content-between">
                 <a href="AI_list.php" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left"></i> 一覧に戻る
-                </a>
-                <a href="AI_ranking.php" class="btn btn-outline-success">
-                    <i class="fas fa-trophy"></i> ランキングを見る
                 </a>
             </div>
         </div>
