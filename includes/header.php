@@ -106,7 +106,10 @@
                         <a class="nav-link" href="AI_dashboard.php">dashboard</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="admin_articles.php"><img src="icons/bug2.png" alt="admin" style="width: 20px; height: 20px;"> </a>
+                        <a class="nav-link" href="admin_articles.php"><img src="icons/bug.png" alt="admin" style="width: 20px; height: 20px;"> </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="admin_AIInfo.php"><img src="icons/bug2.png" alt="admin" style="width: 20px; height: 20px;"> </a>
                     </li>
                 </ul>
                 <form class="d-flex" action="AI_search.php" method="GET">

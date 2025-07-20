@@ -76,10 +76,12 @@ include 'includes/header.php';
                 <div class="row">
                 <?php foreach ($services as $i => $service): ?>
                     <div class="col-md-2 mb-3 text-center">
-                        <img src="icons/<?= htmlspecialchars($service['ai_icon']) ?>" alt="<?= htmlspecialchars($service['ai_service']) ?>"
-                             style="width:40px;height:40px;object-fit:contain;background:#f8f9fa;border-radius:8px;"
-                             onerror="this.src='icons/default-icon.png'">
-                        <div style="font-size:0.95em;"><?= htmlspecialchars($service['ai_service']) ?></div>
+                        <a href="AI_detail.php?id=<?= $service['id'] ?>" style="text-decoration:none;color:inherit;">
+                            <img src="icons/<?= htmlspecialchars($service['ai_icon']) ?>" alt="<?= htmlspecialchars($service['ai_service']) ?>"
+                                style="width:40px;height:40px;object-fit:contain;background:#f8f9fa;border-radius:8px;"
+                                onerror="this.src='icons/default-icon.png'">
+                            <div style="font-size:0.95em;"><?= htmlspecialchars($service['ai_service']) ?></div>
+                        </a>
                     </div>
                     <?php if (($i + 1) % 5 === 0): ?>
                         </div><div class="row">
