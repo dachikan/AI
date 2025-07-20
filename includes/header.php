@@ -96,9 +96,9 @@
                     <!-- <li class="nav-item">
                         <a class="nav-link" href="AI_list.php">AI一覧</a>
                     </li> -->
-                    <li class="nav-item">
+                    <!-- <li class="nav-item">
                         <a class="nav-link" href="AI_categories.php">AIカテゴリ</a>
-                    </li>
+                    </li> -->
                     <!-- <li class="nav-item">
                         <a class="nav-link" href="AI_ranking.php">ランキング</a>
                     </li> -->

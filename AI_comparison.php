@@ -24,15 +24,15 @@ include 'includes/header.php';
 ?>
 
 <div class="container py-4">
-    <h1 class="mb-4"><i class="fas fa-balance-scale"></i> AI一覧・比較</h1>
-
+    <h1 class="mb-4">
+        <i class="fas fa-balance-scale"></i> AI一覧・比較
+        <small><span class="badge bg-primary"><?= count($allServices) ?>件</span>
+    </h1>
     <!-- サービス選択セクション -->
     <div class="card mb-4">
         <div class="card-header">
-            <h3 
-                title="チェックボックスから2つ以上のサービスを選択して「比較する」ボタンをクリックしてください。"
+            <h3 title="チェックボックスから2つ以上のサービスを選択して「比較する」ボタンをクリックしてください。"
                 style="cursor:help;"
-            >
                 AI詳細へリンクする・AIを選択して比較する
             </h3>
         </div>

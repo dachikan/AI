@@ -218,12 +218,20 @@ include 'includes/header.php';
             <span class="badge bg-success">管理者モード</span>
             <small class="text-muted">ログイン時刻: <?= date('Y/m/d H:i', $_SESSION['admin_login_time']) ?></small>
         </div>
-        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#exampleModal">
-            <i class="fas fa-table"></i> 新しいサイト
-        </button>
-        <a href="?logout=1" class="btn btn-outline-secondary">
-            <i class="fas fa-sign-out-alt"></i> ログアウト
-        </a>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                <i class="fas fa-table"></i> 新しいサイト
+            </button>
+            <a href="debug_portal.php" class="btn btn-outline-info btn-sm">
+                <i class="fas fa-bug"></i> debug_portal
+            </a>
+            <a href="check-icons.php" class="btn btn-outline-warning btn-sm">
+                <i class="fas fa-check"></i> check-icon
+            </a>
+            <a href="?logout=1" class="btn btn-outline-secondary">
+                <i class="fas fa-sign-out-alt"></i> ログアウト
+            </a>
+        </div>
     </div>
     
     <?php if (isset($message)): ?>
@@ -418,41 +426,7 @@ include 'includes/header.php';
     <?php endforeach; ?>
 </div>
 <?php include 'includes/footer.php'; ?>
-<!-- Modal -->
-<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-        <div class="container py-5">
-            <div class="form-container shadow-sm">
-                <h1 class="text-center mb-4">note記事から取得</h1>
-                <form action="note_article_info.php" method="POST">
-                    <div class="mb-3">
-                        <label for="article_url" class="form-label">Note記事URL</label>
-                        <input type="url" class="form-control" id="article_url" name="url"
-                            placeholder="https://note.com/ユーザid/n/記事id/"
-                            required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="ai_service_id" class="form-label">AIサービスを選択</label>
-                        <select class="form-select" id="ai_service_id" name="ai_service_id" required>
-                            <?php
-                                $ai_services = getAIServices();
-                                foreach ($ai_services as $service): 
-                            ?>
-                                <option value="<?= $service['id'] ?>"><?= htmlspecialchars($service['ai_service']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">記事情報を取得して保存</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-  </div>
-</div>
+
 <?php ob_end_flush(); // ファイルの最後でバッファを出力 ?>
 <script>
     document.querySelectorAll('[id^="refreshForm_"]').forEach(form => {
@@ -537,3 +511,50 @@ include 'includes/header.php';
         if (placeholder) placeholder.style.display = 'inline';
     }
 </script>
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="container py-5">
+                <div class="form-container shadow-sm">
+                    <h1 class="text-center mb-4">既存記事を登録</h1>
+                    <form action="note_article_info.php" method="POST">
+                        <div class="mb-3">
+                            <label for="article_url" class="form-label">Note記事URL</label>
+                            <input type="url" class="form-control" id="article_url" name="url"
+                                placeholder="https://note.com/ユーザid/n/記事id/"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="ai_service_id" class="form-label">AIサービスを選択</label>
+                            <select class="form-select" id="ai_service_id" name="ai_service_id" required>
+                                <?php
+                                    $ai_services = getAIServices();
+                                    foreach ($ai_services as $service): 
+                                ?>
+                                    <option value="<?= $service['id'] ?>"><?= htmlspecialchars($service['ai_service']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <!-- 記事タイプ選択を追加 -->
+                            <div class="mb-3">
+                                <label for="modal_article_type" class="form-label">記事の種類</label>
+                                <select class="form-select" id="modal_article_type" name="article_type" required>
+                                    <option value="">選択してください</option>
+                                    <?php 
+                                    $articleTypes = getArticleTypes();
+                                    foreach ($articleTypes as $value => $label): 
+                                    ?>
+                                        <option value="<?= $value ?>"><?= htmlspecialchars($label) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">記事情報を取得して保存</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

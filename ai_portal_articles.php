@@ -980,19 +980,18 @@ include 'includes/header.php';
                             </select>
                         </div>
                         <!-- 記事タイプ選択を追加 -->
-                        <!-- 記事タイプ選択を追加 -->
-                            <div class="mb-3">
-                                <label for="modal_article_type" class="form-label">記事の種類</label>
-                                <select class="form-select" id="modal_article_type" name="article_type" required>
-                                    <option value="">選択してください</option>
-                                    <?php 
-                                    $articleTypes = getArticleTypes();
-                                    foreach ($articleTypes as $value => $label): 
-                                    ?>
-                                        <option value="<?= $value ?>"><?= htmlspecialchars($label) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
+                        <div class="mb-3">
+                            <label for="modal_article_type" class="form-label">記事の種類</label>
+                            <select class="form-select" id="modal_article_type" name="article_type" required>
+                                <option value="">選択してください</option>
+                                <?php 
+                                $articleTypes = getArticleTypes();
+                                foreach ($articleTypes as $value => $label): 
+                                ?>
+                                    <option value="<?= $value ?>"><?= htmlspecialchars($label) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary">記事情報を取得して保存</button>
                         </div>
